@@ -15,12 +15,10 @@ export default {
   },
   template: `
     <div>
-      <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center">
-        <input v-model="locationName" placeholder="Ort (z.B. Berlin)" style="flex:1;padding:8px;border:1px solid #ddd;border-radius:6px" />
-        <button @click="searchLocation" style="padding:8px 10px;border-radius:6px;border:1px solid #1976d2;background:#1976d2;color:#fff">Suchen</button>
-        <button @click="useGeolocation" title="Aktuellen Standort verwenden" style="border:0;background:transparent;padding:6px;cursor:pointer">
-          <!-- simple location icon -->
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1976d2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a8 8 0 10-14.8 0L12 21z"></path></svg>
+      <div style="margin-bottom:20px;display:flex;gap:12px;align-items:center;background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);backdrop-filter:blur(10px)">
+        <input v-model="locationName" @keyup.enter="searchLocation" placeholder="Ort (z.B. Berlin)" style="flex:1;padding:12px 16px;border:2px solid #e1e5e9;border-radius:8px;font-size:16px;outline:none;transition:border-color 0.2s ease" />
+        <button @click="useGeolocation" title="Aktuellen Standort verwenden" style="border:none;background:#f8f9fa;padding:10px;border-radius:8px;cursor:pointer;transition:background 0.2s ease">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a8 8 0 10-14.8 0L12 21z"></path></svg>
         </button>
       </div>
 
@@ -34,7 +32,7 @@ export default {
           <MapPreview :data="weatherData" />
         </aside>
       </div>
-      <div v-if="loading" style="text-align:center;color:#666;margin-top:12px">Lade Wetterdaten…</div>
+      <div v-if="loading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Wetterdaten werden geladen…</div>
     </div>
   `,
   methods: {
