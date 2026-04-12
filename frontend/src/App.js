@@ -21,12 +21,31 @@ export default {
       climateData: null,
       climateLoading: false,
       dashboardData: null,
+      darkMode: false,
     };
   },
   template: `
-    <div>
+    <div :style="{background: darkMode ? '#1a1a1a' : '#f8f9fa', color: darkMode ? '#e0e0e0' : '#333', minHeight: '100vh', transition: 'background 0.3s ease'}">
+      <div style="max-width:1200px;margin:0 auto;padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h1 style="margin:0;font-size:2rem;font-weight:600">Wetter-Enthusiasten Plattform</h1>
+          <button @click="toggleDarkMode" style="padding:10px;border-radius:50%;border:none;background:darkMode?'#333':'#fff';cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path v-if="darkMode" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              <circle v-else cx="12" cy="12" r="5"></circle>
+              <line v-else x1="12" y1="1" x2="12" y2="3"></line>
+              <line v-else x1="12" y1="21" x2="12" y2="23"></line>
+              <line v-else x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line v-else x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line v-else x1="1" y1="12" x2="3" y2="12"></line>
+              <line v-else x1="21" y1="12" x2="23" y2="12"></line>
+              <line v-else x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line v-else x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+        </div>
       <div style="margin-bottom:20px;display:flex;gap:12px;align-items:center;background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);backdrop-filter:blur(10px)">
-        <input v-model="locationName" @keyup.enter="searchLocation" placeholder="Ort (z.B. Berlin)" style="flex:1;padding:12px 16px;border:2px solid #e1e5e9;border-radius:8px;font-size:16px;outline:none;transition:border-color 0.2s ease" />
+        <input v-model="locationName" @keyup.enter="searchLocation" placeholder="Ort (z.B. Berlin)" :style="{flex:1,padding:'12px 16px',border:'2px solid ' + (darkMode ? '#555' : '#e1e5e9'),borderRadius:'8px',fontSize:'16px',outline:'none',transition:'border-color 0.2s ease',background:darkMode?'#333':'#fff',color:darkMode?'#e0e0e0':'#333'}" />
         <button @click="useGeolocation" title="Aktuellen Standort verwenden" style="border:none;background:#f8f9fa;padding:10px;border-radius:8px;cursor:pointer;transition:background 0.2s ease">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a8 8 0 10-14.8 0L12 21z"></path></svg>
         </button>
@@ -55,8 +74,8 @@ export default {
 
       <div v-if="currentTab === 'historical'">
         <div style="margin-bottom:20px;display:flex;gap:12px;align-items:center">
-          <input v-model="startDate" type="date" style="padding:12px;border:2px solid #e1e5e9;border-radius:8px" />
-          <input v-model="endDate" type="date" style="padding:12px;border:2px solid #e1e5e9;border-radius:8px" />
+          <input v-model="startDate" type="date" :style="{padding:'12px',border:'2px solid ' + (darkMode ? '#555' : '#e1e5e9'),borderRadius:'8px',background:darkMode?'#333':'#fff',color:darkMode?'#e0e0e0':'#333'}" />
+          <input v-model="endDate" type="date" :style="{padding:'12px',border:'2px solid ' + (darkMode ? '#555' : '#e1e5e9'),borderRadius:'8px',background:darkMode?'#333':'#fff',color:darkMode?'#e0e0e0':'#333'}" />
           <button @click="fetchHistorical" style="padding:12px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:500;cursor:pointer">Laden</button>
         </div>
         <div v-if="historicalLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Historische Daten werden geladen…</div>
@@ -64,6 +83,7 @@ export default {
           <h3>Historische Temperaturen</h3>
           <canvas ref="historicalChart" style="max-height:400px"></canvas>
         </div>
+        <div v-else-if="historicalData && historicalData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ historicalData.message }}</div>
       </div>
 
       <div v-if="currentTab === 'seasonal'">
@@ -77,6 +97,7 @@ export default {
           <h3>Saisonale Niederschlags-Abweichungen</h3>
           <canvas ref="seasonalPrecipChart" style="max-height:400px"></canvas>
         </div>
+        <div v-else-if="seasonalData && seasonalData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ seasonalData.message }}</div>
       </div>
 
       <div v-if="currentTab === 'climate'">
@@ -88,20 +109,21 @@ export default {
           <h3>Klimaprojektionen: Temperaturänderungen</h3>
           <canvas ref="climateChart" style="max-height:400px"></canvas>
         </div>
+        <div v-else-if="climateData && climateData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ climateData.message }}</div>
       </div>
 
       <div v-if="currentTab === 'dashboard'">
         <h3>API-Monitoring Dashboard</h3>
         <div style="display:flex;gap:20px;margin-bottom:20px">
-          <div style="background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);flex:1">
+          <div :style="{background:darkMode?'rgba(33,33,33,0.9)':'rgba(255,255,255,0.9)',padding:'16px',borderRadius:'12px',boxShadow:'0 4px 12px rgba(0,0,0,0.1)',flex:1,backdropFilter:'blur(10px)'}">
             <h4>API-Calls heute</h4>
             <p style="font-size:24px;font-weight:bold;color:#667eea">{{ dashboardData ? dashboardData.callsToday : 'Lade...' }}</p>
           </div>
-          <div style="background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);flex:1">
+          <div :style="{background:darkMode?'rgba(33,33,33,0.9)':'rgba(255,255,255,0.9)',padding:'16px',borderRadius:'12px',boxShadow:'0 4px 12px rgba(0,0,0,0.1)',flex:1,backdropFilter:'blur(10px)'}">
             <h4>Cache-Hits</h4>
             <p style="font-size:24px;font-weight:bold;color:#28a745">{{ dashboardData ? dashboardData.cacheHits : 'Lade...' }}</p>
           </div>
-          <div style="background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);flex:1">
+          <div :style="{background:darkMode?'rgba(33,33,33,0.9)':'rgba(255,255,255,0.9)',padding:'16px',borderRadius:'12px',boxShadow:'0 4px 12px rgba(0,0,0,0.1)',flex:1,backdropFilter:'blur(10px)'}">
             <h4>Rate-Limit Warnungen</h4>
             <p style="font-size:24px;font-weight:bold;color:#ffc107">{{ dashboardData ? dashboardData.rateLimitWarnings : 'Lade...' }}</p>
           </div>
@@ -116,6 +138,7 @@ export default {
       </div>
 
       <div v-if="loading && currentTab === 'forecast'" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Wetterdaten werden geladen…</div>
+      </div>
     </div>
   `,
   methods: {
@@ -262,26 +285,30 @@ export default {
         .finally(() => (this.climateLoading = false));
     },
     fetchDashboard() {
-      fetch('/backend/proxy.php?api=dashboard')
+      fetch("/backend/proxy.php?api=dashboard")
         .then((r) => r.json())
         .then((json) => {
           this.dashboardData = json;
         })
         .catch((e) => {
           console.error("Fetch dashboard failed", e);
-          this.dashboardData = { callsToday: 0, cacheHits: 0, rateLimitWarnings: 0 };
+          this.dashboardData = {
+            callsToday: 0,
+            cacheHits: 0,
+            rateLimitWarnings: 0,
+          };
         });
     },
     exportData(type) {
       let data = null;
       let filename = `${type}_data.csv`;
-      if (type === 'forecast' && this.weatherData) {
+      if (type === "forecast" && this.weatherData) {
         data = this.weatherData;
-      } else if (type === 'historical' && this.historicalData) {
+      } else if (type === "historical" && this.historicalData) {
         data = this.historicalData;
-      } else if (type === 'seasonal' && this.seasonalData) {
+      } else if (type === "seasonal" && this.seasonalData) {
         data = this.seasonalData;
-      } else if (type === 'climate' && this.climateData) {
+      } else if (type === "climate" && this.climateData) {
         data = this.climateData;
       }
       if (!data) {
@@ -296,39 +323,43 @@ export default {
         const csv = this.convertToCSV(data.monthly);
         this.downloadCSV(csv, filename);
       } else {
-        alert('Datenformat nicht unterstützt für Export.');
+        alert("Datenformat nicht unterstützt für Export.");
       }
     },
     convertToCSV(objArray) {
-      const array = typeof objArray !== 'object' ? JSON.parse(objArray) : objArray;
-      let str = '';
+      const array =
+        typeof objArray !== "object" ? JSON.parse(objArray) : objArray;
+      let str = "";
       for (let i = 0; i < array.length; i++) {
-        let line = '';
+        let line = "";
         for (let index in array[i]) {
-          if (line !== '') line += ',';
+          if (line !== "") line += ",";
           line += array[i][index];
         }
-        str += line + '\r\n';
+        str += line + "\r\n";
       }
       return str;
     },
     downloadCSV(csv, filename) {
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    },
-  },
+    },    toggleDarkMode() {
+      this.darkMode = !this.darkMode;
+      localStorage.setItem('darkMode', this.darkMode);
+    },  },
   mounted() {
     // initial fetch from default location (Wörth am Rhein)
     this.fetchWeather(49.05, 8.2667, false);
     this.reverseGeocode(49.05, 8.2667);
     this.fetchDashboard();
+    this.darkMode = localStorage.getItem('darkMode') === 'true';
   },
   watch: {
     historicalData() {
