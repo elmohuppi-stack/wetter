@@ -1,53 +1,116 @@
-# Implementierungsplan — Wetter-App
+# Implementierungsplan: Wetter-Enthusiasten-Plattform
 
-## Ziel
+## Einführung und Ziel
 
-Einfache, übersichtliche Wetter-Website für einen Ort; schnell erfassbar: "Was ist jetzt?", "Wie wird es heute?", "Wie wird die Woche?". Rechtlich sauber: Impressum und Datenschutzerklärung von Anfang an.
-
----
-
-## Versionen und Inhalte
-
-### V1.0 — MVP (Grundversion)
-
-Ziel: Kernnutzen in einer schlanken Oberfläche.
-
-- Aktuelles Wetter (Temperatur, gefühlte Temperatur, Wettersymbol, kurze Text-Zusammenfassung)
-- Stundenübersicht (12–24 Stunden): Temperatur, Niederschlagswahrscheinlichkeit, Wind
-- 7-Tage-Vorhersage (Tageshoch/-tief, Regenwahrscheinlichkeit)
-- Basiswerte: Luftfeuchtigkeit, Sonnenaufgang/-untergang
-- Footer: Links zu Impressum und Datenschutzerklärung
-- Eine übersichtliche Karte als unterstützendes Element (Standort)
-
-### V1.1 — Visuelle Aufwertung
-
-Ziel: bessere Lesbarkeit und Grafik.
-
-- Wetterkarte mit Temperatursymbolen und Werten
-- Grafischer Temperaturverlauf (Stundenlinie)
-- Optional: einfacher Regen-/Windverlauf als Balken/Layer
-
-### V1.2 — Komfortfunktionen
-
-Ziel: Alltagshilfen, ohne die App zu überfrachten.
-
-- Kurze Alltagshinweise (z. B. "Regen ab 16 Uhr")
-- Einfache Warnhinweise (Gewitter, Sturm, Frost, Hitze)
-
-### V2.0 — Erweiterungen (optional)
-
-- Mehrere Orte / Favoriten
-- Luftqualität / Pollen / UV-Details
-- Benachrichtigungen / Widgets
-- Radar- und Niederschlagslayer
+- **Neues Ziel**: Transformation der einfachen Wetter-App in eine umfassende, geekige Plattform für Wetter-Enthusiasten. Biete detaillierte Daten, Vergleiche, historische Analysen und Klimaprojektionen. Zielgruppe: Meteorologie-Interessierte, Forscher, Hobby-Meteorologen.
+- **Schwerpunkt**: Maximale API-Integration (Forecast, Historical, Seasonal, Climate), aber strikte Einhaltung der Free-Plan-Limits (10.000 Calls/Tag, 600 Calls/Min).
+- **Werte**: Datengetrieben, visuell ansprechend, interaktiv, offen für Community-Beiträge.
 
 ---
 
-## Technische Randbedingungen (empfohlen, nicht verbindlich)
+## API-Übersicht (Open-Meteo)
 
-- Backend: `Laravel` (API, Caching, rechtliche Seiten)
-- Frontend: `Vue.js` (interaktive Komponenten, Charts)
-- Wetter-API: `Open-Meteo` als Standard (kostenlos, ausreichend)
+Basierend auf der Dokumentation sind folgende APIs relevant und kostenlos integrierbar:
+
+- **Weather Forecast API** (bereits teilweise integriert): Aktuelle, stündliche, tägliche Vorhersagen (bis 16 Tage). Variablen: Temperatur, Niederschlag, Wind, Strahlung, Drucklevel, etc.
+- **Historical Weather API**: Historische Daten (seit 1940) für Vergleiche. Variablen ähnlich Forecast, aber rückblickend.
+- **Seasonal Forecast API**: Saisonale Vorhersagen (bis 6 Monate) mit Wahrscheinlichkeiten für Temperatur/Niederschlag-Abweichungen.
+- **Climate Change API**: Klimaprojektionen (bis 2100) basierend auf CMIP6-Modellen. Variablen: Temperaturänderungen, Niederschlagsmuster, Extremereignisse.
+- **Zusätzliche APIs** (optional, wenn Limits erlauben): Ensemble Models, Marine Weather, Air Quality, Flood API.
+
+**Limits-Einhaltung**:
+
+- Free Plan: 10.000 Calls/Tag, 600 Calls/Min.
+- Strategie: Aggressive Caching (10-60 Min), Batch-Requests für mehrere Standorte, User-Rate-Limiting (z.B. 10 Calls/User/Tag), Serverseitiges Caching mit Redis/File.
+
+---
+
+## Limit-Management und Architektur
+
+- **Caching-Strategie**:
+  - Serverseitig: Cache API-Responses 10-30 Min (abhängig von Datenfrische).
+  - Clientseitig: Cache für wiederholte Anfragen.
+  - Historische Daten: Cache für Monate/Jahre, da statisch.
+- **Rate-Limiting**:
+  - Backend: Laravel Throttle-Middleware (600/Min, 10.000/Tag pro IP/User).
+  - Frontend: Debouncing für Suchen, Warnungen bei Limit-Überschreitung.
+- **Architektur-Änderungen**:
+  - **Backend**: Erweitere Laravel-Proxy zu vollem Service. Neue Controller für Historical/Seasonal/Climate. Cache-Layer (z.B. Laravel Cache mit File/Redis).
+  - **Frontend**: Neue Komponenten für Datenvisualisierung (Charts für historische Trends, Karten für Klimadaten). Vue.js mit Pinia für State-Management.
+  - **Datenbank**: Einfache SQLite/PostgreSQL für User-Settings, gecachte Daten.
+- **Monitoring**: Logs für API-Calls, Dashboard zur Überwachung der Limits.
+
+---
+
+## UI/UX für Wetter-Enthusiasten
+
+- **Geek-Fokus**: Daten-zentriert, nicht "schön" sondern informativ.
+  - **Dashboard**: Übersicht mit aktuellen Daten, Trends, Alerts.
+  - **Vergleichs-Tools**: Historische vs. aktuelle Daten, saisonale Abweichungen.
+  - **Visualisierungen**: Erweiterte Charts (Chart.js/Plotly) für Zeitreihen, Karten (Leaflet) für räumliche Daten.
+  - **Daten-Export**: CSV/JSON für Analysen.
+  - **Community-Features**: Teilen von Daten, Kommentare (optional, später).
+- **Responsive Design**: Desktop-first für detaillierte Charts, mobile-optimiert.
+- **Dark Mode**: Für lange Sessions.
+
+---
+
+## Implementierungsplan (Phasen)
+
+### Phase 1: Grundlagen erweitern (1-2 Wochen)
+
+- Backend: Neue Services für Historical/Seasonal/Climate APIs.
+- Caching implementieren.
+- Rate-Limiting hinzufügen.
+- Frontend: Neue Komponenten für historische Daten (z.B. Jahresvergleich-Chart).
+
+### Phase 2: Historische und saisonale Daten (2-3 Wochen)
+
+- Integriere Historical Weather API: UI für Datumsbereiche, Charts für langfristige Trends.
+- Seasonal Forecast: Wahrscheinlichkeits-Diagramme, Abweichungs-Karten.
+- Teste Limits mit simulierten Calls.
+
+### Phase 3: Klimadaten und Advanced Features (3-4 Wochen)
+
+- Climate Change API: Projektionen bis 2100, Szenarien (SSP1-5), interaktive Karten.
+- Erweiterte Visualisierungen: Heatmaps, Zeitreihen mit Modell-Vergleichen.
+- Daten-Export und API-Dokumentation für User.
+
+### Phase 4: Polishing und Monitoring (1-2 Wochen)
+
+- Performance-Optimierung, Fehlerbehandlung.
+- Monitoring-Dashboard für API-Usage.
+- Dokumentation und Tutorials für Enthusiasten.
+
+### Phase 5: Launch und Feedback (1 Woche)
+
+- Beta-Launch, User-Feedback sammeln.
+- Anpassungen basierend auf Limits/Usage.
+
+---
+
+## Risiken und Mitigation
+
+- **Limits-Überschreitung**: Monitoring, Fallback zu gecachten Daten, User-Benachrichtigungen.
+- **API-Änderungen**: Open-Meteo ist stabil, aber Versions-Checks.
+- **Performance**: Caching und Lazy-Loading verhindern Overload.
+- **Rechtliches**: Free Plan für non-commercial, klar kommunizieren.
+- **Skalierung**: Wenn Traffic steigt, auf Paid-Plan wechseln oder Limits erhöhen.
+
+---
+
+## Ressourcen und Timeline
+
+- **Team**: Solo-Entwicklung (du), ggf. Open-Source-Beiträge.
+- **Tools**: Laravel, Vue.js, Chart.js, Leaflet, Redis (optional).
+- **Kosten**: 0 (Free Plan), Hosting (z.B. Vercel/Netlify für Frontend).
+- **Gesamt-Timeline**: 8-12 Wochen, abhängig von Komplexität.
+- **Meilensteine**:
+  - Woche 1-2: Phase 1 fertig.
+  - Woche 3-5: Phase 2 fertig.
+  - Woche 6-9: Phase 3 fertig.
+  - Woche 10-11: Phase 4 fertig.
+  - Woche 12: Launch.
 - Kartenbasis: `OpenStreetMap` (Tile-Provider wie MapTiler/OSM-tiles)
 - Diagramme: `Chart.js` für Temperatur- und Regenverläufe
 
