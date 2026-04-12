@@ -11,6 +11,16 @@ export default {
       loading: true,
       locationName: "",
       isCurrentLocation: false,
+      currentTab: "forecast",
+      historicalData: null,
+      historicalLoading: false,
+      startDate: "",
+      endDate: "",
+      seasonalData: null,
+      seasonalLoading: false,
+      climateData: null,
+      climateLoading: false,
+      dashboardData: null,
     };
   },
   template: `
@@ -22,17 +32,90 @@ export default {
         </button>
       </div>
 
-      <div class="row">
-        <section class="card large">
-          <CurrentWeather :data="weatherData" :is-current="isCurrentLocation" :location="locationName" />
-          <HourlyTimeline :data="weatherData" />
-        </section>
-        <aside class="card side">
-          <WeeklyList :data="weatherData" />
-          <MapPreview :data="weatherData" />
-        </aside>
+      <div style="margin-bottom:20px;display:flex;gap:0;border-bottom:1px solid #e1e5e9">
+        <button @click="currentTab='forecast'" :style="{padding:'12px 20px',border:'none',background:currentTab==='forecast'?'#667eea':'transparent',color:currentTab==='forecast'?'#fff':'#666',cursor:'pointer',borderRadius:'8px 8px 0 0'}">Forecast</button>
+        <button @click="currentTab='historical'" :style="{padding:'12px 20px',border:'none',background:currentTab==='historical'?'#667eea':'transparent',color:currentTab==='historical'?'#fff':'#666',cursor:'pointer',borderRadius:'8px 8px 0 0'}">Historical</button>
+        <button @click="currentTab='seasonal'" :style="{padding:'12px 20px',border:'none',background:currentTab==='seasonal'?'#667eea':'transparent',color:currentTab==='seasonal'?'#fff':'#666',cursor:'pointer',borderRadius:'8px 8px 0 0'}">Seasonal</button>
+        <button @click="currentTab='climate'" :style="{padding:'12px 20px',border:'none',background:currentTab==='climate'?'#667eea':'transparent',color:currentTab==='climate'?'#fff':'#666',cursor:'pointer',borderRadius:'8px 8px 0 0'}">Climate</button>
+        <button @click="currentTab='dashboard'" :style="{padding:'12px 20px',border:'none',background:currentTab==='dashboard'?'#667eea':'transparent',color:currentTab==='dashboard'?'#fff':'#666',cursor:'pointer',borderRadius:'8px 8px 0 0'}">Dashboard</button>
       </div>
-      <div v-if="loading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Wetterdaten werden geladen…</div>
+
+      <div v-if="currentTab === 'forecast'">
+        <div class="row">
+          <section class="card large">
+            <CurrentWeather :data="weatherData" :is-current="isCurrentLocation" :location="locationName" />
+            <HourlyTimeline :data="weatherData" />
+          </section>
+          <aside class="card side">
+            <WeeklyList :data="weatherData" />
+            <MapPreview :data="weatherData" />
+          </aside>
+        </div>
+      </div>
+
+      <div v-if="currentTab === 'historical'">
+        <div style="margin-bottom:20px;display:flex;gap:12px;align-items:center">
+          <input v-model="startDate" type="date" style="padding:12px;border:2px solid #e1e5e9;border-radius:8px" />
+          <input v-model="endDate" type="date" style="padding:12px;border:2px solid #e1e5e9;border-radius:8px" />
+          <button @click="fetchHistorical" style="padding:12px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:500;cursor:pointer">Laden</button>
+        </div>
+        <div v-if="historicalLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Historische Daten werden geladen…</div>
+        <div v-else-if="historicalData && !historicalData.error">
+          <h3>Historische Temperaturen</h3>
+          <canvas ref="historicalChart" style="max-height:400px"></canvas>
+        </div>
+      </div>
+
+      <div v-if="currentTab === 'seasonal'">
+        <div style="margin-bottom:20px">
+          <button @click="fetchSeasonal" style="padding:12px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:500;cursor:pointer">Saisonale Vorhersagen laden</button>
+        </div>
+        <div v-if="seasonalLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Saisonale Daten werden geladen…</div>
+        <div v-else-if="seasonalData && !seasonalData.error">
+          <h3>Saisonale Temperatur-Abweichungen</h3>
+          <canvas ref="seasonalTempChart" style="max-height:400px"></canvas>
+          <h3>Saisonale Niederschlags-Abweichungen</h3>
+          <canvas ref="seasonalPrecipChart" style="max-height:400px"></canvas>
+        </div>
+      </div>
+
+      <div v-if="currentTab === 'climate'">
+        <div style="margin-bottom:20px">
+          <button @click="fetchClimate" style="padding:12px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:500;cursor:pointer">Klimaprojektionen laden</button>
+        </div>
+        <div v-if="climateLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Klimadaten werden geladen…</div>
+        <div v-else-if="climateData && !climateData.error">
+          <h3>Klimaprojektionen: Temperaturänderungen</h3>
+          <canvas ref="climateChart" style="max-height:400px"></canvas>
+        </div>
+      </div>
+
+      <div v-if="currentTab === 'dashboard'">
+        <h3>API-Monitoring Dashboard</h3>
+        <div style="display:flex;gap:20px;margin-bottom:20px">
+          <div style="background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);flex:1">
+            <h4>API-Calls heute</h4>
+            <p style="font-size:24px;font-weight:bold;color:#667eea">{{ dashboardData ? dashboardData.callsToday : 'Lade...' }}</p>
+          </div>
+          <div style="background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);flex:1">
+            <h4>Cache-Hits</h4>
+            <p style="font-size:24px;font-weight:bold;color:#28a745">{{ dashboardData ? dashboardData.cacheHits : 'Lade...' }}</p>
+          </div>
+          <div style="background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);flex:1">
+            <h4>Rate-Limit Warnungen</h4>
+            <p style="font-size:24px;font-weight:bold;color:#ffc107">{{ dashboardData ? dashboardData.rateLimitWarnings : 'Lade...' }}</p>
+          </div>
+        </div>
+        <h3>Daten-Export</h3>
+        <div style="display:flex;gap:12px;margin-bottom:20px">
+          <button @click="exportData('forecast')" style="padding:12px 20px;border-radius:8px;border:none;background:#28a745;color:#fff;font-weight:500;cursor:pointer">Forecast als CSV</button>
+          <button @click="exportData('historical')" style="padding:12px 20px;border-radius:8px;border:none;background:#28a745;color:#fff;font-weight:500;cursor:pointer">Historical als CSV</button>
+          <button @click="exportData('seasonal')" style="padding:12px 20px;border-radius:8px;border:none;background:#28a745;color:#fff;font-weight:500;cursor:pointer">Seasonal als CSV</button>
+          <button @click="exportData('climate')" style="padding:12px 20px;border-radius:8px;border:none;background:#28a745;color:#fff;font-weight:500;cursor:pointer">Climate als CSV</button>
+        </div>
+      </div>
+
+      <div v-if="loading && currentTab === 'forecast'" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Wetterdaten werden geladen…</div>
     </div>
   `,
   methods: {
@@ -114,10 +197,284 @@ export default {
         { enableHighAccuracy: false, timeout: 8000 },
       );
     },
+    fetchHistorical() {
+      if (!this.startDate || !this.endDate) {
+        alert("Bitte Start- und Enddatum auswählen.");
+        return;
+      }
+      this.historicalLoading = true;
+      const lat = 49.05; // Use current location or default
+      const lon = 8.2667;
+      fetch(
+        `/backend/proxy.php?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&api=historical&start_date=${this.startDate}&end_date=${this.endDate}`,
+      )
+        .then((r) => r.json())
+        .then((json) => {
+          this.historicalData = json;
+        })
+        .catch((e) => {
+          console.error("Fetch historical failed", e);
+          this.historicalData = {
+            error: true,
+            message: "Historische Daten konnten nicht geladen werden",
+          };
+        })
+        .finally(() => (this.historicalLoading = false));
+    },
+    fetchSeasonal() {
+      this.seasonalLoading = true;
+      const lat = 49.05;
+      const lon = 8.2667;
+      fetch(
+        `/backend/proxy.php?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&api=seasonal`,
+      )
+        .then((r) => r.json())
+        .then((json) => {
+          this.seasonalData = json;
+        })
+        .catch((e) => {
+          console.error("Fetch seasonal failed", e);
+          this.seasonalData = {
+            error: true,
+            message: "Saisonale Daten konnten nicht geladen werden",
+          };
+        })
+        .finally(() => (this.seasonalLoading = false));
+    },
+    fetchClimate() {
+      this.climateLoading = true;
+      const lat = 49.05;
+      const lon = 8.2667;
+      fetch(
+        `/backend/proxy.php?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&api=climate`,
+      )
+        .then((r) => r.json())
+        .then((json) => {
+          this.climateData = json;
+        })
+        .catch((e) => {
+          console.error("Fetch climate failed", e);
+          this.climateData = {
+            error: true,
+            message: "Klimadaten konnten nicht geladen werden",
+          };
+        })
+        .finally(() => (this.climateLoading = false));
+    },
+    fetchDashboard() {
+      fetch('/backend/proxy.php?api=dashboard')
+        .then((r) => r.json())
+        .then((json) => {
+          this.dashboardData = json;
+        })
+        .catch((e) => {
+          console.error("Fetch dashboard failed", e);
+          this.dashboardData = { callsToday: 0, cacheHits: 0, rateLimitWarnings: 0 };
+        });
+    },
+    exportData(type) {
+      let data = null;
+      let filename = `${type}_data.csv`;
+      if (type === 'forecast' && this.weatherData) {
+        data = this.weatherData;
+      } else if (type === 'historical' && this.historicalData) {
+        data = this.historicalData;
+      } else if (type === 'seasonal' && this.seasonalData) {
+        data = this.seasonalData;
+      } else if (type === 'climate' && this.climateData) {
+        data = this.climateData;
+      }
+      if (!data) {
+        alert(`Keine ${type}-Daten verfügbar. Bitte zuerst laden.`);
+        return;
+      }
+      // Simple CSV export for daily data
+      if (data.daily) {
+        const csv = this.convertToCSV(data.daily);
+        this.downloadCSV(csv, filename);
+      } else if (data.monthly) {
+        const csv = this.convertToCSV(data.monthly);
+        this.downloadCSV(csv, filename);
+      } else {
+        alert('Datenformat nicht unterstützt für Export.');
+      }
+    },
+    convertToCSV(objArray) {
+      const array = typeof objArray !== 'object' ? JSON.parse(objArray) : objArray;
+      let str = '';
+      for (let i = 0; i < array.length; i++) {
+        let line = '';
+        for (let index in array[i]) {
+          if (line !== '') line += ',';
+          line += array[i][index];
+        }
+        str += line + '\r\n';
+      }
+      return str;
+    },
+    downloadCSV(csv, filename) {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    },
   },
   mounted() {
     // initial fetch from default location (Wörth am Rhein)
     this.fetchWeather(49.05, 8.2667, false);
     this.reverseGeocode(49.05, 8.2667);
+    this.fetchDashboard();
+  },
+  watch: {
+    historicalData() {
+      this.$nextTick(() => {
+        if (
+          this.historicalData &&
+          this.historicalData.daily &&
+          this.$refs.historicalChart
+        ) {
+          const ctx = this.$refs.historicalChart.getContext("2d");
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: this.historicalData.daily.time,
+              datasets: [
+                {
+                  label: "Max Temperatur (°C)",
+                  data: this.historicalData.daily.temperature_2m_max,
+                  borderColor: "#ff6384",
+                  backgroundColor: "rgba(255,99,132,0.2)",
+                  fill: false,
+                },
+                {
+                  label: "Min Temperatur (°C)",
+                  data: this.historicalData.daily.temperature_2m_min,
+                  borderColor: "#36a2eb",
+                  backgroundColor: "rgba(54,162,235,0.2)",
+                  fill: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: "Datum",
+                  },
+                },
+                y: {
+                  display: true,
+                  title: {
+                    display: true,
+                    text: "Temperatur (°C)",
+                  },
+                },
+              },
+            },
+          });
+        }
+      });
+    },
+    seasonalData() {
+      this.$nextTick(() => {
+        if (
+          this.seasonalData &&
+          this.seasonalData.monthly &&
+          this.$refs.seasonalTempChart
+        ) {
+          const ctxTemp = this.$refs.seasonalTempChart.getContext("2d");
+          new Chart(ctxTemp, {
+            type: "line",
+            data: {
+              labels: this.seasonalData.monthly.time,
+              datasets: [
+                {
+                  label: "Temperatur-Abweichung (°C)",
+                  data: this.seasonalData.monthly.temperature_2m_mean,
+                  borderColor: "#ff6384",
+                  backgroundColor: "rgba(255,99,132,0.2)",
+                  fill: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { title: { display: true, text: "Monat" } },
+                y: { title: { display: true, text: "Abweichung (°C)" } },
+              },
+            },
+          });
+          const ctxPrecip = this.$refs.seasonalPrecipChart.getContext("2d");
+          new Chart(ctxPrecip, {
+            type: "line",
+            data: {
+              labels: this.seasonalData.monthly.time,
+              datasets: [
+                {
+                  label: "Niederschlags-Abweichung (mm)",
+                  data: this.seasonalData.monthly.precipitation_sum,
+                  borderColor: "#36a2eb",
+                  backgroundColor: "rgba(54,162,235,0.2)",
+                  fill: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { title: { display: true, text: "Monat" } },
+                y: { title: { display: true, text: "Abweichung (mm)" } },
+              },
+            },
+          });
+        }
+      });
+    },
+    climateData() {
+      this.$nextTick(() => {
+        if (
+          this.climateData &&
+          this.climateData.monthly &&
+          this.$refs.climateChart
+        ) {
+          const ctx = this.$refs.climateChart.getContext("2d");
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: this.climateData.monthly.time,
+              datasets: [
+                {
+                  label: "Temperaturänderung (°C)",
+                  data: this.climateData.monthly.temperature_2m_mean,
+                  borderColor: "#ff6384",
+                  backgroundColor: "rgba(255,99,132,0.2)",
+                  fill: false,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                x: { title: { display: true, text: "Jahr" } },
+                y: { title: { display: true, text: "Änderung (°C)" } },
+              },
+            },
+          });
+        }
+      });
+    },
   },
 };
