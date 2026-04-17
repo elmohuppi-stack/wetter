@@ -95,16 +95,18 @@ export default {
   computed: {
     currentSelectedParams: {
       get() {
-        return this.chartTab === 'daily' ? this.selectedDailyParams : this.selectedHourlyParams;
+        return this.chartTab === "daily"
+          ? this.selectedDailyParams
+          : this.selectedHourlyParams;
       },
       set(value) {
-        if (this.chartTab === 'daily') {
+        if (this.chartTab === "daily") {
           this.selectedDailyParams = value;
         } else {
           this.selectedHourlyParams = value;
         }
-      }
-    }
+      },
+    },
   },
   watch: {
     data: {
@@ -535,7 +537,7 @@ export default {
         <div v-if="currentSelectedParams.length === 0" :style="{ textAlign: 'center', padding: '40px', color: darkMode ? '#666' : '#999' }">
           Wähle mindestens einen Parameter aus, um die Grafik anzuzeigen.
         </div>
-        <canvas v-else ref="chart" :style="{ maxHeight: '400px' }"></canvas>
+        <canvas v-else ref="chart" :style="{ maxHeight: '800px' }"></canvas>
       </div>
 
       <!-- Accordion: Detail-Tabelle -->
