@@ -130,13 +130,16 @@ Das Dashboard zeigt Live-Metriken:
 **Ursache**: Falsche Pfade in `frontend/index.html` oder Router normalisiert nicht
 
 **Lösung prüfen**:
+
 1. `frontend/index.html` muss absolute Pfade haben:
+
    ```html
    <link rel="stylesheet" href="/frontend/style.css" />
    <script src="/frontend/src/main.js"></script>
    ```
 
 2. `index.php` muss `/frontend/` Prefix normalisieren (verhindert Verdopplung):
+
    ```php
    if (strpos($path, '/frontend/') === 0) {
        $normalized_path = substr($path, strlen('/frontend'));
@@ -167,6 +170,7 @@ sudo systemctl restart nginx
 **Ursache**: Nginx Config hat SSL Paths, aber Cert existiert noch nicht
 
 **Lösung**: Erst HTTP-only Config, dann Certbot, dann Nginx reload:
+
 ```bash
 # HTTP-only Nginx Config
 sudo tee /etc/nginx/sites-available/wetter.conf > /dev/null << 'EOF'
