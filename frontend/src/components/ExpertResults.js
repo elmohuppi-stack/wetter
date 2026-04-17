@@ -92,6 +92,20 @@ export default {
       },
     };
   },
+  computed: {
+    currentSelectedParams: {
+      get() {
+        return this.chartTab === 'daily' ? this.selectedDailyParams : this.selectedHourlyParams;
+      },
+      set(value) {
+        if (this.chartTab === 'daily') {
+          this.selectedDailyParams = value;
+        } else {
+          this.selectedHourlyParams = value;
+        }
+      }
+    }
+  },
   watch: {
     data: {
       handler() {
@@ -423,7 +437,7 @@ export default {
       </div>
 
       <!-- Tabs: Tägliche | Stündliche -->
-      <div :style="{ marginBottom: '16px', display: 'flex', gap: '8px' }">
+      <div v-if="data" :style="{ marginBottom: '16px', display: 'flex', gap: '8px' }">
         <button
           :style="{
             padding: '8px 16px',
@@ -455,14 +469,14 @@ export default {
       </div>
 
       <!-- Parameter-Checkboxen -->
-      <div :style="{ marginBottom: '16px', padding: '12px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px' }">
+      <div v-if="data" :style="{ marginBottom: '16px', padding: '12px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px' }">
         <div :style="{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }">Parameter auswählen:</div>
         <div :style="{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }">
           <label v-for="param in chartableKeys(chartTab === 'daily' ? data?.daily : data?.hourly)" :key="param" :style="{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }">
             <input
               type="checkbox"
               :value="param"
-              v-model="chartTab === 'daily' ? selectedDailyParams : selectedHourlyParams"
+              v-model="currentSelectedParams"
               :style="{ margin: 0 }"
             />
             <span>{{ getTranslation(param) }}</span>
@@ -471,7 +485,7 @@ export default {
       </div>
 
       <!-- Chart-Typ-Buttons -->
-      <div :style="{ marginBottom: '16px', display: 'flex', gap: '8px' }">
+      <div v-if="data" :style="{ marginBottom: '16px', display: 'flex', gap: '8px' }">
         <button
           :style="{
             padding: '6px 12px',
@@ -517,8 +531,8 @@ export default {
       </div>
 
       <!-- Chart Canvas -->
-      <div :style="{ marginBottom: '24px', padding: '16px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px' }">
-        <div v-if="(chartTab === 'daily' ? selectedDailyParams : selectedHourlyParams).length === 0" :style="{ textAlign: 'center', padding: '40px', color: darkMode ? '#666' : '#999' }">
+      <div v-if="data" :style="{ marginBottom: '24px', padding: '16px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px' }">
+        <div v-if="currentSelectedParams.length === 0" :style="{ textAlign: 'center', padding: '40px', color: darkMode ? '#666' : '#999' }">
           Wähle mindestens einen Parameter aus, um die Grafik anzuzeigen.
         </div>
         <canvas v-else ref="chart" :style="{ maxHeight: '400px' }"></canvas>
