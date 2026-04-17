@@ -45,7 +45,7 @@ export default {
         const sliceCount = Math.min(12, temps.length);
         const labels = times
           .slice(0, sliceCount)
-          .map((t) => t.replace("T", " "));
+          .map((t) => t.split("T")[1] || t);
         const data = temps.slice(0, sliceCount);
         if (data.length) {
           this.$nextTick(() => {

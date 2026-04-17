@@ -51,7 +51,15 @@ export default {
         setTimeout(init, 1000);
         return;
       }
-      this.map = L.map("map", { center: [52.52, 13.405], zoom: 10 });
+      this.map = L.map("map", {
+        center: [52.52, 13.405],
+        zoom: 10,
+        dragging: false,
+        scrollWheelZoom: false,
+        touchZoom: false,
+        doubleClickZoom: false,
+        zoomControl: false,
+      });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "© OpenStreetMap contributors",

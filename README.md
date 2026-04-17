@@ -11,6 +11,10 @@ Eine umfassende Wetter-App für Meteorologie-Interessierte, gebaut mit Vue.js, C
 - **Dashboard**: API-Monitoring und Daten-Export
 - **Dark Mode**: Für lange Sessions
 - **Responsive Design**: Optimiert für Desktop und Mobile
+- **Header Integration**: Expandierbares Suchfeld mit Geolocation-Button direkt im Header
+- **Standort-Management**: Einfache Ortssuche und GPS-Lokalisierung
+- **Verbesserte UI**: Bessere Darstellung von Wetterdaten mit Emoji-Icons statt Codes
+- **Deutsche Datumsformate**: Lokalisierte Ausgabe von Daten und Uhrzeiten
 
 ## Technologie-Stack
 
@@ -33,8 +37,10 @@ Eine umfassende Wetter-App für Meteorologie-Interessierte, gebaut mit Vue.js, C
 ## Entwicklung
 
 - Phase 1-4 implementiert: Grundlagen, historische Daten, saisonale Daten, Monitoring
+- UI-Verbesserungen Phase 1: Header-Integration, expandierbares Suchfeld, optimierte Darstellung
 - Caching: 10min-24h je nach Datenfrische
 - Export: CSV für alle Datenarten
+- Lokalisierung: Deutsche Datumsformate und Uhrzeiten
 
 ## Lizenz
 
@@ -43,3 +49,4 @@ Free for non-commercial use. Respektiere Open-Meteo Limits.
 ---
 
 Ursprünglich erstellt am: 11. April 2026
+Zuletzt aktualisiert: 17. April 2026 (UI-Verbesserungen)

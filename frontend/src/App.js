@@ -36,19 +36,11 @@ export default {
   },
   template: `
     <div :style="{background: darkMode ? '#1a1a1a' : '#f8f9fa', color: darkMode ? '#e0e0e0' : '#333', minHeight: '100vh', transition: 'background 0.3s ease'}">
-      <Header :darkMode="darkMode" :location="locationName" @toggle-dark-mode="toggleDarkMode" />
+      <Header :darkMode="darkMode" :location="locationName" @toggle-dark-mode="toggleDarkMode" @search-location="searchLocation" @use-geolocation="useGeolocation" />
       <Sidebar :currentTab="currentTab" :darkMode="darkMode" @tab-change="currentTab = $event" />
       
       <!-- Main Content Area -->
       <main :style="{marginLeft: '125px', marginTop: '60px', padding: '24px', maxWidth: 'calc(100% - 125px)', transition: 'margin-left 0.3s ease'}">
-        <!-- Location Search -->
-        <div style="margin-bottom:20px;display:flex;gap:12px;align-items:center;background:rgba(255,255,255,0.9);padding:16px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);backdrop-filter:blur(10px)">
-          <input v-model="locationName" @keyup.enter="searchLocation" placeholder="Ort (z.B. Berlin)" :style="{flex:1,padding:'12px 16px',border:'2px solid ' + (darkMode ? '#555' : '#e1e5e9'),borderRadius:'8px',fontSize:'16px',outline:'none',transition:'border-color 0.2s ease',background:darkMode?'#333':'#fff',color:darkMode?'#e0e0e0':'#333'}" />
-          <button @click="useGeolocation" title="Aktuellen Standort verwenden" style="border:none;background:#f8f9fa;padding:10px;border-radius:8px;cursor:pointer;transition:background 0.2s ease">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a8 8 0 10-14.8 0L12 21z"></path></svg>
-          </button>
-        </div>
-
         <!-- Forecast Tab -->
         <div v-if="currentTab === 'forecast'">
           <div class="row">
@@ -160,8 +152,8 @@ export default {
         })
         .finally(() => (this.loading = false));
     },
-    searchLocation() {
-      const q = (this.locationName || "").trim();
+    searchLocation(q) {
+      q = (q || this.locationName || "").trim();
       if (!q) {
         alert("Bitte einen Ort eingeben.");
         return;

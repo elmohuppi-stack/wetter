@@ -15,12 +15,23 @@ export default {
       }));
     },
   },
+  methods: {
+    formatDate(dateStr) {
+      const date = new Date(dateStr + "T00:00:00");
+      return date.toLocaleDateString("de-DE", { 
+        weekday: "short", 
+        day: "2-digit", 
+        month: "2-digit", 
+        year: "numeric" 
+      });
+    },
+  },
   template: `
       <div>
         <h4>Nächste Tage</h4>
         <ul style="list-style:none;padding:0;margin:0">
           <li v-for="d in days" :key="d.day" style="padding:8px 0;border-bottom:1px solid #f2f2f2;display:flex;justify-content:space-between">
-            <div>{{ d.day }}</div>
+            <div>{{ formatDate(d.day) }}</div>
             <div>{{ d.hi }}° / {{ d.lo }}°</div>
           </li>
         </ul>
