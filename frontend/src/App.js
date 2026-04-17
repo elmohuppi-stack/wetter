@@ -4,6 +4,7 @@ import WeeklyList from "./components/WeeklyList.js";
 import MapPreview from "./components/MapPreview.js";
 import Header from "./components/Header.js";
 import Sidebar from "./components/Sidebar.js";
+import Expert from "./components/Expert.js";
 
 export default {
   components: {
@@ -13,6 +14,7 @@ export default {
     MapPreview,
     Header,
     Sidebar,
+    Expert,
   },
   data() {
     return {
@@ -32,6 +34,9 @@ export default {
       dashboardData: null,
       darkMode: false,
       sidebarOpen: true,
+      expertData: null,
+      expertLoading: false,
+      expertParameters: null,
     };
   },
   template: `
@@ -122,6 +127,19 @@ export default {
             <button @click="exportData('seasonal')" style="padding:12px 20px;border-radius:8px;border:none;background:#28a745;color:#fff;font-weight:500;cursor:pointer">Seasonal als CSV</button>
             <button @click="exportData('climate')" style="padding:12px 20px;border-radius:8px;border:none;background:#28a745;color:#fff;font-weight:500;cursor:pointer">Climate als CSV</button>
           </div>
+        </div>
+
+        <!-- Expert Tab -->
+        <div v-if="currentTab === 'expert'">
+          <Expert :darkMode="darkMode" @refresh-expert-data="handleRefreshExpert" />
+          <div v-if="expertLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Expert-Daten werden geladen…</div>
+          <div v-else-if="expertData && !expertData.error" style="margin-top:20px">
+            <div :style="{ padding: '16px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px', marginBottom: '16px' }">
+              <h3 style="margin-top: 0">Geladene Daten</h3>
+              <pre :style="{ background: darkMode ? '#222' : '#f8f9fa', padding: '12px', borderRadius: '4px', overflow: 'auto', maxHeight: '500px', fontSize: '12px', color: darkMode ? '#e0e0e0' : '#333' }">{{ JSON.stringify(expertData, null, 2) }}</pre>
+            </div>
+          </div>
+          <div v-else-if="expertData && expertData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ expertData.message }}</div>
         </div>
 
         <div v-if="loading && currentTab === 'forecast'" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Wetterdaten werden geladen…</div>
@@ -499,6 +517,45 @@ export default {
         },
       });
     },
+  },
+  handleRefreshExpert(selectedParameters) {
+    this.expertLoading = true;
+    this.expertParameters = selectedParameters;
+    
+    const lat = 49.05;
+    const lon = 8.2667;
+    
+    const queryParams = new URLSearchParams();
+    queryParams.append('lat', lat);
+    queryParams.append('lon', lon);
+    queryParams.append('api', 'expert');
+    
+    if (selectedParameters.current && selectedParameters.current.length > 0) {
+      queryParams.append('current', selectedParameters.current.join(','));
+    }
+    if (selectedParameters.daily && selectedParameters.daily.length > 0) {
+      queryParams.append('daily', selectedParameters.daily.join(','));
+    }
+    if (selectedParameters.hourly && selectedParameters.hourly.length > 0) {
+      queryParams.append('hourly', selectedParameters.hourly.join(','));
+    }
+    
+    fetch(`/backend/proxy.php?${queryParams.toString()}`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((json) => {
+        this.expertData = json;
+      })
+      .catch((e) => {
+        console.error("Fetch expert data failed", e);
+        this.expertData = {
+          error: true,
+          message: "Expert-Daten konnten nicht geladen werden",
+        };
+      })
+      .finally(() => (this.expertLoading = false));
   },
   mounted() {
     // Try to use user's geolocation on first load

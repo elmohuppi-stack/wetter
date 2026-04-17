@@ -61,6 +61,24 @@ switch ($api) {
         ];
         $cacheTtl = 3600 * 24; // 1 day for climate
         break;
+    case 'expert':
+        $base = 'https://api.open-meteo.com/v1/forecast';
+        $params = [
+            'latitude' => $lat,
+            'longitude' => $lon,
+            'timezone' => 'auto',
+        ];
+        if (isset($_GET['current'])) {
+            $params['current'] = $_GET['current'];
+        }
+        if (isset($_GET['daily'])) {
+            $params['daily'] = $_GET['daily'];
+        }
+        if (isset($_GET['hourly'])) {
+            $params['hourly'] = $_GET['hourly'];
+        }
+        $cacheTtl = 600; // 10 min for expert
+        break;
     case 'dashboard':
         $statsFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'weather_stats.txt';
         $stats = ['calls_today' => 0, 'cache_hits' => 0, 'rate_warnings' => 0];

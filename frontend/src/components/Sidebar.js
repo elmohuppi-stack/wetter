@@ -12,6 +12,7 @@ export default {
         { id: "seasonal", label: "Seasonal", icon: "🌡️" },
         { id: "climate", label: "Climate", icon: "🌍" },
         { id: "dashboard", label: "Dashboard", icon: "📱" },
+        { id: "expert", label: "Expert", icon: "👨‍🔬" },
       ],
     };
   },
