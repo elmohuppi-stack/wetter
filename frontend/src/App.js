@@ -108,18 +108,26 @@ export default {
         <!-- Dashboard Tab -->
         <div v-if="currentTab === 'dashboard'">
           <h3>API-Monitoring Dashboard</h3>
-          <div style="display:flex;gap:20px;margin-bottom:20px">
+          <div style="display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap">
             <div :style="{background:darkMode?'rgba(33,33,33,0.9)':'rgba(255,255,255,0.9)',padding:'16px',borderRadius:'12px',boxShadow:'0 4px 12px rgba(0,0,0,0.1)',flex:1,backdropFilter:'blur(10px)'}">
               <h4>API-Calls heute</h4>
-              <p style="font-size:24px;font-weight:bold;color:#667eea">{{ dashboardData ? dashboardData.callsToday : 'Lade...' }}</p>
+              <p style="font-size:24px;font-weight:bold;color:#667eea">{{ dashboardData ? dashboardData.calls_today : 'Lade...' }}</p>
             </div>
             <div :style="{background:darkMode?'rgba(33,33,33,0.9)':'rgba(255,255,255,0.9)',padding:'16px',borderRadius:'12px',boxShadow:'0 4px 12px rgba(0,0,0,0.1)',flex:1,backdropFilter:'blur(10px)'}">
               <h4>Cache-Hits</h4>
-              <p style="font-size:24px;font-weight:bold;color:#28a745">{{ dashboardData ? dashboardData.cacheHits : 'Lade...' }}</p>
+              <p style="font-size:24px;font-weight:bold;color:#28a745">{{ dashboardData ? dashboardData.cache_hits : 'Lade...' }}</p>
             </div>
             <div :style="{background:darkMode?'rgba(33,33,33,0.9)':'rgba(255,255,255,0.9)',padding:'16px',borderRadius:'12px',boxShadow:'0 4px 12px rgba(0,0,0,0.1)',flex:1,backdropFilter:'blur(10px)'}">
-              <h4>Rate-Limit Warnungen</h4>
-              <p style="font-size:24px;font-weight:bold;color:#ffc107">{{ dashboardData ? dashboardData.rateLimitWarnings : 'Lade...' }}</p>
+              <h4>Minute ({{ dashboardData?.minute_used || 0 }}/{{ dashboardData?.minute_limit || 540 }})</h4>
+              <div style="background:rgba(200,200,200,0.2);height:8px;border-radius:4px;overflow:hidden">
+                <div :style="{width:(dashboardData ? (dashboardData.minute_used/dashboardData.minute_limit*100) : 0)+'%',height:'100%',background:dashboardData && dashboardData.minute_used > dashboardData.minute_limit * 0.9 ? '#ff6b6b' : '#667eea',transition:'all 0.3s'}"></div>
+              </div>
+            </div>
+            <div :style="{background:darkMode?'rgba(33,33,33,0.9)':'rgba(255,255,255,0.9)',padding:'16px',borderRadius:'12px',boxShadow:'0 4px 12px rgba(0,0,0,0.1)',flex:1,backdropFilter:'blur(10px)'}">
+              <h4>Stunde ({{ dashboardData?.hour_used || 0 }}/{{ dashboardData?.hour_limit || 4500 }})</h4>
+              <div style="background:rgba(200,200,200,0.2);height:8px;border-radius:4px;overflow:hidden">
+                <div :style="{width:(dashboardData ? (dashboardData.hour_used/dashboardData.hour_limit*100) : 0)+'%',height:'100%',background:dashboardData && dashboardData.hour_used > dashboardData.hour_limit * 0.9 ? '#ff6b6b' : '#667eea',transition:'all 0.3s'}"></div>
+              </div>
             </div>
           </div>
           <h3>Daten-Export</h3>
@@ -600,6 +608,26 @@ export default {
         if (newTab === "seasonal") this.renderSeasonalChart();
         if (newTab === "climate") this.renderClimateChart();
       });
+
+      // Auto-load and poll dashboard data when switching to dashboard tab
+      if (newTab === "dashboard") {
+        this.fetchDashboard();
+        // Clear any existing poll
+        if (this.dashboardPollInterval) {
+          clearInterval(this.dashboardPollInterval);
+        }
+        // Poll dashboard stats every 5 seconds for live updates
+        this.dashboardPollInterval = setInterval(() => {
+          this.fetchDashboard();
+        }, 5000);
+      } else {
+        // Clear dashboard poll when leaving tab
+        if (this.dashboardPollInterval) {
+          clearInterval(this.dashboardPollInterval);
+          this.dashboardPollInterval = null;
+        }
+      }
+
       // Auto-load expert data when switching to expert tab
       if (newTab === "expert") {
         this.handleRefreshExpert({

@@ -1,0 +1,12 @@
+{
+  "name": "wetter-app",
+  "version": "1.0.0",
+  "description": "Weather app with Open-Meteo API",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/tailwind.css -o ./frontend/style.css --minify",
+    "watch:css": "tailwindcss -i ./src/tailwind.css -o ./frontend/style.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}
