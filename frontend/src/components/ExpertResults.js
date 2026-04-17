@@ -336,16 +336,31 @@ export default {
         if (this.chartTab === "daily") {
           return this.formatDate(t);
         } else {
-          // Show date label every 24 hours, otherwise time
-          if (i % 24 === 0) {
+          // Show date label only when date changes (every 24 hours)
+          if (
+            i === 0 ||
+            (i > 0 &&
+              this.formatDate(t) !== this.formatDate(dataSource.time[i - 1]))
+          ) {
             return this.formatDate(t);
           }
-          return this.formatTime(t);
+          return "";
         }
       });
 
       // Build Y-axes configuration
       const yAxes = this.buildYAxes(selectedParams);
+
+      // Build X-axis configuration based on tab
+      const xAxisConfig = {
+        ticks: {
+          color: this.darkMode ? "#e0e0e0" : "#333",
+          maxTicksLimit: this.chartTab === "hourly" ? 30 : 7,
+          maxRotation: 0,
+          minRotation: 0,
+        },
+        grid: { color: this.darkMode ? "#333" : "#eee" },
+      };
 
       if (this._chart) this._chart.destroy();
 
@@ -366,10 +381,7 @@ export default {
             },
           },
           scales: {
-            x: {
-              ticks: { color: this.darkMode ? "#e0e0e0" : "#333" },
-              grid: { color: this.darkMode ? "#333" : "#eee" },
-            },
+            x: xAxisConfig,
             ...yAxes,
           },
         },
@@ -537,7 +549,9 @@ export default {
         <div v-if="currentSelectedParams.length === 0" :style="{ textAlign: 'center', padding: '40px', color: darkMode ? '#666' : '#999' }">
           Wähle mindestens einen Parameter aus, um die Grafik anzuzeigen.
         </div>
-        <canvas v-else ref="chart" :style="{ maxHeight: chartTab === 'hourly' ? '1600px' : '800px' }"></canvas>
+        <div v-else :style="{ height: '200px' }">
+          <canvas ref="chart"></canvas>
+        </div>
       </div>
 
       <!-- Accordion: Detail-Tabelle -->
