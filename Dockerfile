@@ -1,10 +1,9 @@
 FROM php:8.2-cli
 
-# Install necessary extensions
+# Install necessary packages
 RUN apt-get update && apt-get install -y \
     curl \
     git \
-    && docker-php-ext-install json \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
