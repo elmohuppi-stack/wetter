@@ -24,8 +24,14 @@ if (strpos($path, '/backend/') === 0) {
     exit;
 }
 
+// Frontend-Pfade normalisieren (strip /frontend/ prefix wenn vorhanden)
+$normalized_path = $path;
+if (strpos($path, '/frontend/') === 0) {
+    $normalized_path = substr($path, strlen('/frontend'));
+}
+
 // Statische Dateien aus frontend/ mit korrektem MIME-Type servieren
-$frontend_file = __DIR__ . '/frontend' . $path;
+$frontend_file = __DIR__ . '/frontend' . $normalized_path;
 if (is_file($frontend_file)) {
     $ext = strtolower(pathinfo($frontend_file, PATHINFO_EXTENSION));
     $mime = $mime_types[$ext] ?? 'application/octet-stream';
