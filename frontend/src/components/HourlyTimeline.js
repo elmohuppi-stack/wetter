@@ -3,7 +3,7 @@ export default {
   template: `
     <div>
       <h3>Stundenübersicht (nächste 7 Tage)</h3>
-      <div style="height: 400px;">
+      <div style="height: 200px;">
         <canvas ref="hourChart"></canvas>
       </div>
     </div>

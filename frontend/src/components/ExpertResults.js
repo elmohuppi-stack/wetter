@@ -537,7 +537,7 @@ export default {
         <div v-if="currentSelectedParams.length === 0" :style="{ textAlign: 'center', padding: '40px', color: darkMode ? '#666' : '#999' }">
           Wähle mindestens einen Parameter aus, um die Grafik anzuzeigen.
         </div>
-        <canvas v-else ref="chart" :style="{ maxHeight: '800px' }"></canvas>
+        <canvas v-else ref="chart" :style="{ maxHeight: chartTab === 'hourly' ? '1600px' : '800px' }"></canvas>
       </div>
 
       <!-- Accordion: Detail-Tabelle -->
