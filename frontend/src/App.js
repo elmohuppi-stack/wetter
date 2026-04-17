@@ -5,6 +5,7 @@ import MapPreview from "./components/MapPreview.js";
 import Header from "./components/Header.js";
 import Sidebar from "./components/Sidebar.js";
 import Expert from "./components/Expert.js";
+import ExpertResults from "./components/ExpertResults.js";
 
 export default {
   components: {
@@ -15,6 +16,7 @@ export default {
     Header,
     Sidebar,
     Expert,
+    ExpertResults,
   },
   data() {
     return {
@@ -131,13 +133,10 @@ export default {
 
         <!-- Expert Tab -->
         <div v-if="currentTab === 'expert'">
-          <Expert :darkMode="darkMode" @refresh-expert-data="handleRefreshExpert" />
+          <Expert :darkMode="darkMode" :isLoading="expertLoading" @refresh-expert-data="handleRefreshExpert" />
           <div v-if="expertLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Expert-Daten werden geladen…</div>
           <div v-else-if="expertData && !expertData.error" style="margin-top:20px">
-            <div :style="{ padding: '16px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px', marginBottom: '16px' }">
-              <h3 style="margin-top: 0">Geladene Daten</h3>
-              <pre :style="{ background: darkMode ? '#222' : '#f8f9fa', padding: '12px', borderRadius: '4px', overflow: 'auto', maxHeight: '500px', fontSize: '12px', color: darkMode ? '#e0e0e0' : '#333' }">{{ JSON.stringify(expertData, null, 2) }}</pre>
-            </div>
+            <ExpertResults :data="expertData" :darkMode="darkMode" />
           </div>
           <div v-else-if="expertData && expertData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ expertData.message }}</div>
         </div>
@@ -517,45 +516,52 @@ export default {
         },
       });
     },
-  },
-  handleRefreshExpert(selectedParameters) {
-    this.expertLoading = true;
-    this.expertParameters = selectedParameters;
-    
-    const lat = 49.05;
-    const lon = 8.2667;
-    
-    const queryParams = new URLSearchParams();
-    queryParams.append('lat', lat);
-    queryParams.append('lon', lon);
-    queryParams.append('api', 'expert');
-    
-    if (selectedParameters.current && selectedParameters.current.length > 0) {
-      queryParams.append('current', selectedParameters.current.join(','));
-    }
-    if (selectedParameters.daily && selectedParameters.daily.length > 0) {
-      queryParams.append('daily', selectedParameters.daily.join(','));
-    }
-    if (selectedParameters.hourly && selectedParameters.hourly.length > 0) {
-      queryParams.append('hourly', selectedParameters.hourly.join(','));
-    }
-    
-    fetch(`/backend/proxy.php?${queryParams.toString()}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((json) => {
-        this.expertData = json;
-      })
-      .catch((e) => {
-        console.error("Fetch expert data failed", e);
-        this.expertData = {
-          error: true,
-          message: "Expert-Daten konnten nicht geladen werden",
-        };
-      })
-      .finally(() => (this.expertLoading = false));
+    handleRefreshExpert(selectedParameters) {
+      this.expertLoading = true;
+      this.expertData = null;
+      this.expertParameters = selectedParameters;
+
+      const lat = 49.05;
+      const lon = 8.2667;
+
+      const queryParams = new URLSearchParams();
+      queryParams.append("lat", lat);
+      queryParams.append("lon", lon);
+      queryParams.append("api", "expert");
+
+      if (selectedParameters.current && selectedParameters.current.length > 0) {
+        queryParams.append("current", selectedParameters.current.join(","));
+      }
+      if (selectedParameters.daily && selectedParameters.daily.length > 0) {
+        queryParams.append("daily", selectedParameters.daily.join(","));
+      }
+      if (selectedParameters.hourly && selectedParameters.hourly.length > 0) {
+        queryParams.append("hourly", selectedParameters.hourly.join(","));
+      }
+
+      console.log(
+        "Expert API Call:",
+        `/backend/proxy.php?${queryParams.toString()}`,
+      );
+      fetch(`/backend/proxy.php?${queryParams.toString()}`)
+        .then((r) => {
+          console.log("Response status:", r.status);
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          return r.json();
+        })
+        .then((json) => {
+          console.log("Expert data received:", json);
+          this.expertData = json;
+        })
+        .catch((e) => {
+          console.error("Fetch expert data failed", e);
+          this.expertData = {
+            error: true,
+            message: "Expert-Daten konnten nicht geladen werden: " + e.message,
+          };
+        })
+        .finally(() => (this.expertLoading = false));
+    },
   },
   mounted() {
     // Try to use user's geolocation on first load
@@ -594,6 +600,33 @@ export default {
         if (newTab === "seasonal") this.renderSeasonalChart();
         if (newTab === "climate") this.renderClimateChart();
       });
+      // Auto-load expert data when switching to expert tab
+      if (newTab === "expert") {
+        this.handleRefreshExpert({
+          current: [
+            "temperature_2m",
+            "weather_code",
+            "wind_speed_10m",
+            "precipitation",
+          ],
+          daily: [
+            "weather_code",
+            "temperature_2m_max",
+            "temperature_2m_min",
+            "sunrise",
+            "sunset",
+            "uv_index_max",
+            "wind_speed_10m_max",
+          ],
+          hourly: [
+            "temperature_2m",
+            "relative_humidity_2m",
+            "precipitation_probability",
+            "cloud_cover",
+            "wind_speed_10m",
+          ],
+        });
+      }
     },
     historicalData() {
       this.$nextTick(() => {

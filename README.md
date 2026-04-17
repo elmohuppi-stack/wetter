@@ -8,13 +8,13 @@ Eine umfassende Wetter-App für Meteorologie-Interessierte, gebaut mit Vue.js, C
 - **Historical**: Historische Wetterdaten für Vergleiche (seit 1940)
 - **Seasonal**: Saisonale Vorhersagen mit Wahrscheinlichkeiten
 - **Climate**: Klimaprojektionen bis 2100 basierend auf CMIP6-Modellen
+- **Expert-Tab**: Freie Parameterauswahl für Open-Meteo API (Aktuelle, Tägliche, Stündliche Daten)
 - **Dashboard**: API-Monitoring und Daten-Export
 - **Dark Mode**: Für lange Sessions
 - **Responsive Design**: Optimiert für Desktop und Mobile
 - **Header Integration**: Expandierbares Suchfeld mit Geolocation-Button direkt im Header
 - **Standort-Management**: Einfache Ortssuche und GPS-Lokalisierung
-- **Verbesserte UI**: Bessere Darstellung von Wetterdaten mit Emoji-Icons statt Codes
-- **Deutsche Datumsformate**: Lokalisierte Ausgabe von Daten und Uhrzeiten
+- **Deutsche Lokalisierung**: Alle Parameter übersetzt, Datumsformate, Einheiten, Himmelsrichtungen und Windstärken auf Deutsch
 
 ## Technologie-Stack
 
@@ -38,9 +38,11 @@ Eine umfassende Wetter-App für Meteorologie-Interessierte, gebaut mit Vue.js, C
 
 - Phase 1-4 implementiert: Grundlagen, historische Daten, saisonale Daten, Monitoring
 - UI-Verbesserungen Phase 1: Header-Integration, expandierbares Suchfeld, optimierte Darstellung
-- Caching: 10min-24h je nach Datenfrische
+- Expert-Tab: Freie API-Parameterauswahl mit Accordion-UI, Buttons (Start/Default/Alle), automatisches Laden
+- Expert-Ergebnisse: Deutsche Übersetzungen, Einheiten, Wettercodes als Text, Himmelsrichtungen, Windstärken (Beaufort)
+- Caching: 10min–24h je nach Datenfrische, Parameter-Hash für Expert-Mode
 - Export: CSV für alle Datenarten
-- Lokalisierung: Deutsche Datumsformate und Uhrzeiten
+- Lokalisierung: Deutsche Datumsformate, Uhrzeiten, Wetterbeschreibungen und Windbezeichnungen
 
 ## Lizenz
 
@@ -49,4 +51,4 @@ Free for non-commercial use. Respektiere Open-Meteo Limits.
 ---
 
 Ursprünglich erstellt am: 11. April 2026
-Zuletzt aktualisiert: 17. April 2026 (UI-Verbesserungen)
+Zuletzt aktualisiert: 17. April 2026 (Expert-Tab, deutsche Lokalisierung)

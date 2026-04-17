@@ -96,7 +96,7 @@ switch ($api) {
         $params = [
             'latitude' => $lat,
             'longitude' => $lon,
-            'current_weather' => 'true',
+            'current' => 'temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation',
             'hourly' => 'temperature_2m,precipitation,weathercode',
             'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode',
             'timezone' => 'auto',
@@ -104,7 +104,7 @@ switch ($api) {
         $cacheTtl = 600; // 10 min for forecast
 }
 
-$cacheKey = $api . '_' . preg_replace('/[^a-z0-9._-]/i', '_', $lat . '_' . $lon);
+$cacheKey = $api . '_' . preg_replace('/[^a-z0-9._-]/i', '_', $lat . '_' . $lon) . ($api === 'expert' ? '_' . md5(serialize($params)) : '');
 $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $cacheKey . '.json';
 
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTtl)) {

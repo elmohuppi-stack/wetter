@@ -2,16 +2,23 @@ export default {
   props: ["data", "isCurrent", "location"],
   computed: {
     ready() {
-      return this.data && !this.data.error && this.data.current_weather;
+      return (
+        this.data &&
+        !this.data.error &&
+        (this.data.current || this.data.current_weather)
+      );
+    },
+    currentData() {
+      return this.data && (this.data.current || this.data.current_weather);
     },
     temp() {
-      return this.ready
-        ? Math.round(this.data.current_weather.temperature)
-        : "--";
+      const d = this.currentData;
+      return d ? Math.round(d.temperature_2m ?? d.temperature) : "--";
     },
     feels() {
-      return this.ready && this.data.current_weather.apparent_temperature
-        ? Math.round(this.data.current_weather.apparent_temperature)
+      const d = this.currentData;
+      return d && d.apparent_temperature != null
+        ? Math.round(d.apparent_temperature)
         : "--";
     },
     city() {
@@ -19,7 +26,8 @@ export default {
     },
     condition() {
       if (!this.ready) return "Lade...";
-      const code = this.data.current_weather.weathercode;
+      const code =
+        this.currentData.weather_code ?? this.currentData.weathercode;
       const icons = {
         0: "☀️", // Clear sky
         1: "🌤️", // Mainly clear
