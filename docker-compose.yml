@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wetter-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3031}:8000"
+    environment:
+      - APP_ENV=production
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: php -S 0.0.0.0:8000 -t . -r index.php
+
+networks:
+  default:
+    name: hetzner-network
+    external: true
