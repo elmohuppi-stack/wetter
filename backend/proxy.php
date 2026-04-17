@@ -96,7 +96,7 @@ switch ($api) {
         $params = [
             'latitude' => $lat,
             'longitude' => $lon,
-            'current' => 'temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation',
+            'current' => 'temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,precipitation,cloud_cover',
             'hourly' => 'temperature_2m,precipitation,weathercode',
             'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode',
             'timezone' => 'auto',

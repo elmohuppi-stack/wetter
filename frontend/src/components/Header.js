@@ -40,31 +40,14 @@ export default {
     },
   },
   template: `
-    <header :style="{
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: '#fff',
-      padding: '12px 24px',
-      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      right: '0',
-      zIndex: '1000',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      height: '60px',
-      boxSizing: 'border-box',
-    }">
-      <div style="display: flex; alignItems: 'center'; gap: '12px'; flex: 1; minWidth: 0;">
-        <div style="fontSize: '28px'; fontWeight: 'bold'">🌤️</div>
-        <h1 style="margin: 0; fontSize: '1.3rem'; fontWeight: '600'; letterSpacing: '-0.01em'; overflow: hidden; textOverflow: 'ellipsis'; whiteSpace: 'nowrap'">
-          {{ location ? 'Wetter in ' + location : 'Wetter' }}
-        </h1>
+    <header class="fixed top-0 left-0 right-0 z-50 h-15 bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg flex items-center justify-between px-6 py-3">
+      <div class="flex items-center gap-3 flex-1 min-w-0">
+        <div class="text-2xl font-bold">🌤️</div>
+        <h1 class="text-xl font-semibold truncate">{{ location ? 'Wetter in ' + location : 'Wetter' }}</h1>
       </div>
 
       <!-- Location Search Section -->
-      <div style="display: flex; alignItems: 'center'; gap: '12px'; marginRight: '12px'">
+      <div class="flex items-center gap-3 mr-3">
         <transition name="slide">
           <input
             v-if="searchExpanded"
@@ -73,45 +56,14 @@ export default {
             @blur="handleSearchBlur"
             placeholder="Ort eingeben..."
             ref="searchField"
-            :style="{
-              padding: '8px 12px',
-              border: '2px solid rgba(255, 255, 255, 0.5)',
-              borderRadius: '6px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              color: '#fff',
-              fontSize: '14px',
-              outline: 'none',
-              width: '200px',
-              transition: 'all 0.2s ease',
-              '::placeholder': {
-                color: 'rgba(255, 255, 255, 0.7)',
-              },
-            }"
-            @focus="e => e.target.style.background = 'rgba(255, 255, 255, 0.3)'"
+            class="px-3 py-2 border-2 border-white/50 rounded-lg bg-white/20 text-white placeholder-white/70 text-sm outline-none w-52 transition-all focus:bg-white/30"
           />
         </transition>
         
         <button
           @click="toggleSearchExpanded"
           title="Ort suchen"
-          :style="{
-            padding: '8px 10px',
-            borderRadius: '8px',
-            border: 'none',
-            background: 'rgba(255, 255, 255, 0.2)',
-            color: '#fff',
-            cursor: 'pointer',
-            transition: 'background 0.2s ease',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '40px',
-            height: '40px',
-            minWidth: '40px',
-            marginRight: '12px',
-          }"
-          @mouseenter="e => e.target.style.background = 'rgba(255, 255, 255, 0.3)'"
-          @mouseleave="e => e.target.style.background = 'rgba(255, 255, 255, 0.2)'"
+          class="p-2 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors flex items-center justify-center w-10 h-10 mr-3"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
@@ -122,24 +74,7 @@ export default {
         <button
           @click="handleGeolocation"
           title="Aktuellen Standort verwenden"
-          :style="{
-            padding: '8px 10px',
-            borderRadius: '8px',
-            border: 'none',
-            background: 'rgba(255, 255, 255, 0.2)',
-            color: '#fff',
-            cursor: 'pointer',
-            transition: 'background 0.2s ease',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '40px',
-            height: '40px',
-            minWidth: '40px',
-            marginRight: '12px',
-          }"
-          @mouseenter="e => e.target.style.background = 'rgba(255, 255, 255, 0.3)'"
-          @mouseleave="e => e.target.style.background = 'rgba(255, 255, 255, 0.2)'"
+          class="p-2 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors flex items-center justify-center w-10 h-10 mr-3"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
@@ -151,22 +86,7 @@ export default {
       <button
         @click="$emit('toggle-dark-mode')"
         title="Dark Mode umschalten"
-        :style="{
-          padding: '8px 12px',
-          borderRadius: '8px',
-          border: 'none',
-          background: 'rgba(255, 255, 255, 0.2)',
-          color: '#fff',
-          cursor: 'pointer',
-          transition: 'background 0.2s ease',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '40px',
-          height: '40px',
-        }"
-        @mouseenter="e => e.target.style.background = 'rgba(255, 255, 255, 0.3)'"
-        @mouseleave="e => e.target.style.background = 'rgba(255, 255, 255, 0.2)'"
+        class="p-2 rounded-lg bg-white/20 text-white hover:bg-white/30 transition-colors flex items-center justify-center w-10 h-10"
       >
         <svg
           v-if="darkMode"

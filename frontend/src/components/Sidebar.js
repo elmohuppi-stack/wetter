@@ -17,60 +17,20 @@ export default {
     };
   },
   template: `
-    <aside :style="{
-      width: '125px',
-      background: darkMode ? '#222' : '#f8f9fa',
-      borderRight: '1px solid ' + (darkMode ? '#444' : '#e1e5e9'),
-      padding: '0',
-      minHeight: '100vh',
-      position: 'fixed',
-      left: '0',
-      top: '60px',
-      overflowY: 'auto',
-      fontSize: '13px',
-      transition: 'background 0.3s ease, color 0.3s ease',
-      color: darkMode ? '#e0e0e0' : '#333',
-    }">
-      <nav style="padding: 20px 0">
+    <aside :class="['fixed left-0 top-15 w-32 h-screen overflow-y-auto transition-colors p-0', darkMode ? 'bg-slate-800 border-slate-700 text-gray-300' : 'bg-slate-50 border-slate-200 text-gray-900', 'border-r']">
+      <nav class="py-5">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           @click="$emit('tab-change', tab.id)"
-          :style="{
-            width: '100%',
-            padding: '10px 8px',
-            border: 'none',
-            background: currentTab === tab.id
-              ? (darkMode ? '#667eea' : '#667eea')
-              : 'transparent',
-            color: currentTab === tab.id ? '#fff' : (darkMode ? '#e0e0e0' : '#333'),
-            textAlign: 'center',
-            cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: currentTab === tab.id ? '600' : '500',
-            transition: 'background 0.2s ease, color 0.2s ease',
-            borderLeft: currentTab === tab.id ? '3px solid #764ba2' : 'none',
-            paddingLeft: currentTab === tab.id ? '5px' : '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '0',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }"
-          @mouseenter="e => {
-            if (currentTab !== tab.id) {
-              e.target.style.background = darkMode ? '#333' : '#f0f1f3';
-            }
-          }"
-          @mouseleave="e => {
-            if (currentTab !== tab.id) {
-              e.target.style.background = 'transparent';
-            }
-          }"
+          :class="[
+            'w-full px-2 py-2.5 border-none text-center cursor-pointer text-xs font-medium transition-all flex items-center justify-center gap-0 whitespace-nowrap overflow-hidden text-ellipsis',
+            currentTab === tab.id
+              ? 'bg-purple-600 text-white border-l-4 border-violet-700'
+              : 'bg-transparent hover:' + (darkMode ? 'bg-slate-700' : 'bg-slate-100')
+          ]"
         >
-          <span style="display: none">{{ tab.icon }}</span>
+          <span class="hidden">{{ tab.icon }}</span>
           <span>{{ tab.label }}</span>
         </button>
       </nav>

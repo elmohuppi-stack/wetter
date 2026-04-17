@@ -42,18 +42,18 @@ export default {
     };
   },
   template: `
-    <div :style="{background: darkMode ? '#1a1a1a' : '#f8f9fa', color: darkMode ? '#e0e0e0' : '#333', minHeight: '100vh', transition: 'background 0.3s ease'}">
+    <div :class="['min-h-screen transition-colors', darkMode ? 'bg-slate-900 text-gray-300' : 'bg-slate-50 text-gray-900']">
       <Header :darkMode="darkMode" :location="locationName" @toggle-dark-mode="toggleDarkMode" @search-location="searchLocation" @use-geolocation="useGeolocation" />
       <Sidebar :currentTab="currentTab" :darkMode="darkMode" @tab-change="currentTab = $event" />
       
       <!-- Main Content Area -->
-      <main :style="{marginLeft: '125px', marginTop: '60px', padding: '24px', maxWidth: 'calc(100% - 125px)', transition: 'margin-left 0.3s ease'}">
+      <main class="ml-32 mt-6 p-4 max-w-full transition-all">
         <!-- Forecast Tab -->
         <div v-if="currentTab === 'forecast'">
           <div class="row">
             <section class="card large">
-              <CurrentWeather :data="weatherData" :is-current="isCurrentLocation" :location="locationName" />
-              <HourlyTimeline :data="weatherData" />
+              <CurrentWeather :data="weatherData" :is-current="isCurrentLocation" :location="locationName" :darkMode="darkMode" />
+              <HourlyTimeline :data="weatherData" :darkMode="darkMode" />
             </section>
             <aside class="card side">
               <WeeklyList :data="weatherData" />
@@ -64,17 +64,17 @@ export default {
 
         <!-- Historical Tab -->
         <div v-if="currentTab === 'historical'">
-          <div style="margin-bottom:20px;display:flex;gap:12px;align-items:center">
-            <input v-model="startDate" type="date" :style="{padding:'12px',border:'2px solid ' + (darkMode ? '#555' : '#e1e5e9'),borderRadius:'8px',background:darkMode?'#333':'#fff',color:darkMode?'#e0e0e0':'#333'}" />
-            <input v-model="endDate" type="date" :style="{padding:'12px',border:'2px solid ' + (darkMode ? '#555' : '#e1e5e9'),borderRadius:'8px',background:darkMode?'#333':'#fff',color:darkMode?'#e0e0e0':'#333'}" />
-            <button @click="fetchHistorical" style="padding:12px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:500;cursor:pointer">Laden</button>
+          <div class="mb-5 flex gap-3 items-center">
+            <input v-model="startDate" type="date" :class="['px-3 py-2 border-2 rounded-lg', darkMode ? 'bg-slate-800 border-slate-600 text-gray-300' : 'bg-white border-slate-300 text-gray-900']" />
+            <input v-model="endDate" type="date" :class="['px-3 py-2 border-2 rounded-lg', darkMode ? 'bg-slate-800 border-slate-600 text-gray-300' : 'bg-white border-slate-300 text-gray-900']" />
+            <button @click="fetchHistorical" class="px-5 py-2 rounded-lg border-none bg-gradient-to-r from-purple-500 to-violet-600 text-white font-medium cursor-pointer hover:shadow-lg">Laden</button>
           </div>
-          <div v-if="historicalLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Historische Daten werden geladen…</div>
+          <div v-if="historicalLoading" class="text-center text-gray-500 mt-5 text-lg font-medium">Historische Daten werden geladen…</div>
           <div v-else-if="historicalData && !historicalData.error">
-            <h3>Historische Temperaturen</h3>
-            <canvas ref="historicalChart" style="max-height:400px"></canvas>
+            <h3 class="text-2xl font-bold mb-4">Historische Temperaturen</h3>
+            <canvas ref="historicalChart" class="max-h-96"></canvas>
           </div>
-          <div v-else-if="historicalData && historicalData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ historicalData.message }}</div>
+          <div v-else-if="historicalData && historicalData.error" class="text-center text-red-500 mt-5 text-base">{{ historicalData.message }}</div>
         </div>
 
         <!-- Seasonal Tab -->

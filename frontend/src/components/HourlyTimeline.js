@@ -1,9 +1,12 @@
 export default {
-  props: ["data"],
+  props: ["data", "darkMode"],
+  data() {
+    return {};
+  },
   template: `
     <div>
-      <h3>Stundenübersicht (nächste 7 Tage)</h3>
-      <div style="height: 200px;">
+      <h3 class="mt-6 text-2xl font-bold">Temperaturverlauf</h3>
+      <div class="h-36 mb-6">
         <canvas ref="hourChart"></canvas>
       </div>
     </div>

@@ -431,19 +431,19 @@ export default {
     },
   },
   template: `
-    <div :style="{ color: darkMode ? '#e0e0e0' : '#333' }">
+    <div :class="['text-sm', darkMode ? 'text-gray-300' : 'text-gray-900']">
       <!-- Accordion: Aktuelle Werte -->
-      <div :style="{ marginBottom: '24px', padding: '16px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px' }">
-        <div :style="{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginBottom: currentExpanded ? '16px' : '0' }" @click="currentExpanded = !currentExpanded">
-          <h3 style="margin: 0; flex: 1">Aktuelle Werte</h3>
-          <span :style="{ fontSize: '18px', transform: currentExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }">▼</span>
+      <div :class="['mb-6 p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
+        <div class="flex items-center cursor-pointer mb-4" @click="currentExpanded = !currentExpanded">
+          <h3 class="m-0 flex-1 text-lg font-semibold">Aktuelle Werte</h3>
+          <span :class="['text-lg transition-transform', currentExpanded ? 'rotate-0' : '-rotate-90']">▼</span>
         </div>
         <div v-show="currentExpanded">
-          <div v-if="data && data.current" :style="{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }">
+          <div v-if="data && data.current" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <template v-for="(value, key) in data.current" :key="key">
-              <div v-if="key !== 'interval'" :style="{ padding: '12px', background: darkMode ? '#222' : '#f8f9fa', borderRadius: '4px' }">
-                <div :style="{ fontSize: '12px', opacity: 0.7, marginBottom: '4px' }">{{ getTranslation(key) }}</div>
-                <div :style="{ fontSize: '18px', fontWeight: 'bold', color: '#667eea' }">{{ formatValue(value, key) }}<span v-if="getUnit(key) && key !== 'weather_code'" :style="{ fontSize: '13px', fontWeight: 'normal', marginLeft: '3px', opacity: 0.8 }">{{ getUnit(key) }}</span></div>
+              <div v-if="key !== 'interval'" :class="['p-3 rounded', darkMode ? 'bg-slate-700' : 'bg-gray-50']">
+                <div :class="['text-xs opacity-70 mb-1', darkMode ? 'text-gray-400' : 'text-gray-600']">{{ getTranslation(key) }}</div>
+                <div class="text-base font-bold text-purple-600">{{ formatValue(value, key) }}<span v-if="getUnit(key) && key !== 'weather_code'" class="text-xs font-normal ml-0.5 opacity-80">{{ getUnit(key) }}</span></div>
               </div>
             </template>
           </div>
@@ -451,31 +451,15 @@ export default {
       </div>
 
       <!-- Tabs: Tägliche | Stündliche -->
-      <div v-if="data" :style="{ marginBottom: '16px', display: 'flex', gap: '8px' }">
+      <div v-if="data" class="mb-4 flex gap-2">
         <button
-          :style="{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            background: chartTab === 'daily' ? '#667eea' : (darkMode ? '#333' : '#f8f9fa'),
-            color: chartTab === 'daily' ? '#fff' : (darkMode ? '#e0e0e0' : '#333'),
-            fontWeight: chartTab === 'daily' ? 'bold' : 'normal'
-          }"
+          :class="['px-4 py-2 rounded border-none cursor-pointer font-medium transition-colors', chartTab === 'daily' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
           @click="chartTab = 'daily'"
         >
           Tägliche Vorhersage
         </button>
         <button
-          :style="{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            background: chartTab === 'hourly' ? '#667eea' : (darkMode ? '#333' : '#f8f9fa'),
-            color: chartTab === 'hourly' ? '#fff' : (darkMode ? '#e0e0e0' : '#333'),
-            fontWeight: chartTab === 'hourly' ? 'bold' : 'normal'
-          }"
+          :class="['px-4 py-2 rounded border-none cursor-pointer font-medium transition-colors', chartTab === 'hourly' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
           @click="chartTab = 'hourly'"
         >
           Stündliche Vorhersage
@@ -483,15 +467,15 @@ export default {
       </div>
 
       <!-- Parameter-Checkboxen -->
-      <div v-if="data" :style="{ marginBottom: '16px', padding: '12px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px' }">
-        <div :style="{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }">Parameter auswählen:</div>
-        <div :style="{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px' }">
-          <label v-for="param in chartableKeys(chartTab === 'daily' ? data?.daily : data?.hourly)" :key="param" :style="{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }">
+      <div v-if="data" :class="['mb-4 p-3 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
+        <div class="text-sm font-bold mb-2">Parameter auswählen:</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+          <label v-for="param in chartableKeys(chartTab === 'daily' ? data?.daily : data?.hourly)" :key="param" class="flex items-center gap-1.5 text-xs cursor-pointer">
             <input
               type="checkbox"
               :value="param"
               v-model="currentSelectedParams"
-              :style="{ margin: 0 }"
+              class="m-0 accent-purple-600"
             />
             <span>{{ getTranslation(param) }}</span>
           </label>
@@ -499,45 +483,21 @@ export default {
       </div>
 
       <!-- Chart-Typ-Buttons -->
-      <div v-if="data" :style="{ marginBottom: '16px', display: 'flex', gap: '8px' }">
+      <div v-if="data" class="mb-4 flex gap-2">
         <button
-          :style="{
-            padding: '6px 12px',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            background: chartType === 'line' ? '#667eea' : (darkMode ? '#333' : '#f8f9fa'),
-            color: chartType === 'line' ? '#fff' : (darkMode ? '#e0e0e0' : '#333'),
-            fontSize: '12px'
-          }"
+          :class="['px-3 py-1.5 rounded border-none cursor-pointer text-xs transition-colors', chartType === 'line' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
           @click="chartType = 'line'"
         >
           Linie
         </button>
         <button
-          :style="{
-            padding: '6px 12px',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            background: chartType === 'area' ? '#667eea' : (darkMode ? '#333' : '#f8f9fa'),
-            color: chartType === 'area' ? '#fff' : (darkMode ? '#e0e0e0' : '#333'),
-            fontSize: '12px'
-          }"
+          :class="['px-3 py-1.5 rounded border-none cursor-pointer text-xs transition-colors', chartType === 'area' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
           @click="chartType = 'area'"
         >
           Fläche
         </button>
         <button
-          :style="{
-            padding: '6px 12px',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            background: chartType === 'bar' ? '#667eea' : (darkMode ? '#333' : '#f8f9fa'),
-            color: chartType === 'bar' ? '#fff' : (darkMode ? '#e0e0e0' : '#333'),
-            fontSize: '12px'
-          }"
+          :class="['px-3 py-1.5 rounded border-none cursor-pointer text-xs transition-colors', chartType === 'bar' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
           @click="chartType = 'bar'"
         >
           Balken
@@ -545,37 +505,37 @@ export default {
       </div>
 
       <!-- Chart Canvas -->
-      <div v-if="data" :style="{ marginBottom: '24px', padding: '16px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px' }">
-        <div v-if="currentSelectedParams.length === 0" :style="{ textAlign: 'center', padding: '40px', color: darkMode ? '#666' : '#999' }">
+      <div v-if="data" :class="['mb-6 p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
+        <div v-if="currentSelectedParams.length === 0" :class="['text-center py-10', darkMode ? 'text-gray-600' : 'text-gray-400']">
           Wähle mindestens einen Parameter aus, um die Grafik anzuzeigen.
         </div>
-        <div v-else :style="{ height: '200px' }">
+        <div v-else class="h-52">
           <canvas ref="chart"></canvas>
         </div>
       </div>
 
       <!-- Accordion: Detail-Tabelle -->
-      <div :style="{ padding: '16px', background: darkMode ? 'rgba(33,33,33,0.9)' : 'rgba(255,255,255,0.9)', borderRadius: '8px' }">
-        <div :style="{ display: 'flex', alignItems: 'center', cursor: 'pointer', marginBottom: tableExpanded ? '16px' : '0' }" @click="tableExpanded = !tableExpanded">
-          <h3 style="margin: 0; flex: 1">Detail-Tabelle</h3>
-          <span :style="{ fontSize: '18px', transform: tableExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.2s' }">▼</span>
+      <div :class="['p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
+        <div class="flex items-center cursor-pointer mb-4" @click="tableExpanded = !tableExpanded">
+          <h3 class="m-0 flex-1 text-lg font-semibold">Detail-Tabelle</h3>
+          <span :class="['text-lg transition-transform', tableExpanded ? 'rotate-0' : '-rotate-90']">▼</span>
         </div>
         <div v-show="tableExpanded">
           <!-- Tägliche Tabelle -->
           <div v-if="chartTab === 'daily' && data && data.daily && data.daily.time && data.daily.time.length > 0">
-            <h4 style="margin-top: 0">Tägliche Vorhersage</h4>
-            <div :style="{ overflowX: 'auto' }">
-              <table :style="{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }">
+            <h4 class="mt-0 text-base font-semibold mb-3">Tägliche Vorhersage</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse text-sm">
                 <thead>
-                  <tr :style="{ borderBottom: '2px solid ' + (darkMode ? '#555' : '#ddd'), background: darkMode ? '#222' : '#f8f9fa' }">
-                    <th style="padding: 8px; text-align: left; font-weight: bold">Datum</th>
-                    <th v-for="key in Object.keys(data.daily).filter(k => k !== 'time')" :key="key" style="padding: 8px; text-align: right; font-weight: bold">{{ getTranslation(key) }}</th>
+                  <tr :class="['border-b-2', darkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-100']">
+                    <th class="px-2 py-2 text-left font-bold">Datum</th>
+                    <th v-for="key in Object.keys(data.daily).filter(k => k !== 'time')" :key="key" class="px-2 py-2 text-right font-bold">{{ getTranslation(key) }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(date, index) in data.daily.time" :key="index" :style="{ borderBottom: '1px solid ' + (darkMode ? '#333' : '#e0e0e0'), background: index % 2 === 0 ? (darkMode ? '#1a1a1a' : '#fff') : (darkMode ? '#222' : '#f8f9fa') }">
-                    <td style="padding: 8px; text-align: left">{{ formatDate(date) }}</td>
-                    <td v-for="key in Object.keys(data.daily).filter(k => k !== 'time')" :key="key" style="padding: 8px; text-align: right">{{ formatValue(data.daily[key][index], key) }}</td>
+                  <tr v-for="(date, index) in data.daily.time" :key="index" :class="['border-b', darkMode ? (index % 2 === 0 ? 'bg-slate-800 border-slate-700' : 'bg-slate-700 border-slate-700') : (index % 2 === 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200')]">
+                    <td class="px-2 py-2 text-left">{{ formatDate(date) }}</td>
+                    <td v-for="key in Object.keys(data.daily).filter(k => k !== 'time')" :key="key" class="px-2 py-2 text-right">{{ formatValue(data.daily[key][index], key) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -583,20 +543,20 @@ export default {
           </div>
 
           <!-- Stündliche Tabelle (48h) -->
-          <div v-if="chartTab === 'hourly' && data && data.hourly && data.hourly.time && data.hourly.time.length > 0">
-            <h4 style="margin-top: 0">Stündliche Details (nächste 48h)</h4>
-            <div :style="{ overflowX: 'auto' }">
-              <table :style="{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }">
+          <div v-if="chartTab === 'hourly' && data && data.hourly && data.hourly.time && data.hourly.time.length > 0" class="mt-6">
+            <h4 class="mt-0 text-base font-semibold mb-3">Stündliche Details (nächste 48h)</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full border-collapse text-xs">
                 <thead>
-                  <tr :style="{ borderBottom: '2px solid ' + (darkMode ? '#555' : '#ddd'), background: darkMode ? '#222' : '#f8f9fa' }">
-                    <th style="padding: 8px; text-align: left; font-weight: bold">Zeit</th>
-                    <th v-for="key in Object.keys(data.hourly).filter(k => k !== 'time')" :key="key" style="padding: 8px; text-align: right; font-weight: bold">{{ getTranslation(key) }}</th>
+                  <tr :class="['border-b-2', darkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-100']">
+                    <th class="px-2 py-2 text-left font-bold">Zeit</th>
+                    <th v-for="key in Object.keys(data.hourly).filter(k => k !== 'time')" :key="key" class="px-2 py-2 text-right font-bold">{{ getTranslation(key) }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(time, index) in data.hourly.time.slice(0, 48)" :key="index" :style="{ borderBottom: '1px solid ' + (darkMode ? '#333' : '#e0e0e0'), background: index % 2 === 0 ? (darkMode ? '#1a1a1a' : '#fff') : (darkMode ? '#222' : '#f8f9fa') }">
-                    <td style="padding: 8px; text-align: left; fontWeight: 'bold'">{{ formatTime(time) }}</td>
-                    <td v-for="key in Object.keys(data.hourly).filter(k => k !== 'time')" :key="key" style="padding: 8px; text-align: right">{{ formatValue(data.hourly[key][index], key) }}</td>
+                  <tr v-for="(time, index) in data.hourly.time.slice(0, 48)" :key="index" :class="['border-b', darkMode ? (index % 2 === 0 ? 'bg-slate-800 border-slate-700' : 'bg-slate-700 border-slate-700') : (index % 2 === 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200')]">
+                    <td class="px-2 py-2 text-left font-semibold">{{ formatTime(time) }}</td>
+                    <td v-for="key in Object.keys(data.hourly).filter(k => k !== 'time')" :key="key" class="px-2 py-2 text-right">{{ formatValue(data.hourly[key][index], key) }}</td>
                   </tr>
                 </tbody>
               </table>

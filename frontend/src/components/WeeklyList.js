@@ -28,11 +28,11 @@ export default {
   },
   template: `
       <div>
-        <h4>Nächste Tage</h4>
-        <ul style="list-style:none;padding:0;margin:0">
-          <li v-for="d in days" :key="d.day" style="padding:8px 0;border-bottom:1px solid #f2f2f2;display:flex;justify-content:space-between">
-            <div>{{ formatDate(d.day) }}</div>
-            <div>{{ d.hi }}° / {{ d.lo }}°</div>
+        <h4 class="text-lg font-semibold mb-3">Nächste Tage</h4>
+        <ul class="list-none p-0 m-0">
+          <li v-for="d in days" :key="d.day" class="py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between">
+            <div class="text-gray-700 dark:text-gray-300">{{ formatDate(d.day) }}</div>
+            <div class="font-semibold text-gray-900 dark:text-white">{{ d.hi }}° / {{ d.lo }}°</div>
           </li>
         </ul>
       </div>

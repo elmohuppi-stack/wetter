@@ -39,9 +39,9 @@ export default {
     },
   },
   template: `
-    <div style="margin-top:12px">
-      <h4>Karte</h4>
-      <div id="map" style="height:240px;border-radius:6px"></div>
+    <div class="mt-3">
+      <h4 class="text-lg font-semibold mb-3">Karte</h4>
+      <div id="map" class="h-60 rounded-lg"></div>
     </div>
   `,
   mounted() {
