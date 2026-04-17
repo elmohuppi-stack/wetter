@@ -4,13 +4,13 @@ Deployment-Konfiguration für die Wetter-App auf dem zentralen Hetzner-Multi-App
 
 ## Konfiguration
 
-| Variable | Wert |
-|----------|------|
-| `APP_SLUG` | `wetter` |
-| `FRONTEND_DOMAIN` | `wetter.elmarhepp.de` |
-| `WEB_PORT` | `3031` |
-| `DEPLOY_PATH` | `/var/www/wetter` |
-| `Docker Container` | `wetter-app` |
+| Variable           | Wert                  |
+| ------------------ | --------------------- |
+| `APP_SLUG`         | `wetter`              |
+| `FRONTEND_DOMAIN`  | `wetter.elmarhepp.de` |
+| `WEB_PORT`         | `3031`                |
+| `DEPLOY_PATH`      | `/var/www/wetter`     |
+| `Docker Container` | `wetter-app`          |
 
 ## Stack
 
@@ -27,7 +27,7 @@ Deployment-Konfiguration für die Wetter-App auf dem zentralen Hetzner-Multi-App
 ssh elmarhepp "cd /var/www/wetter && bash deploy-hetzner.sh"
 ```
 
-Oder manuell:
+Oder manuell (wichtig: 2-Schritt Prozess für SSL!):
 
 ```bash
 # 1. Repository klonen
@@ -39,21 +39,39 @@ cd wetter
 cat > .env.production << EOF
 APP_DOMAIN=wetter.elmarhepp.de
 WEB_PORT=3031
+DEPLOY_PATH=/var/www/wetter
 EOF
 
-# 3. Docker Compose starten
+# 3. Docker Network erstellen (einmalig pro Server)
+docker network create hetzner-network || true
+
+# 4. Docker Compose starten
 docker compose up -d --build
 
-# 4. Nginx konfigurieren
-sudo cp wetter-nginx.conf /etc/nginx/sites-available/wetter.conf
+# 5. Nginx HTTP-only Config (Certbot braucht HTTP!)
+sudo tee /etc/nginx/sites-available/wetter.conf > /dev/null << 'EOF'
+server {
+    listen 80;
+    server_name wetter.elmarhepp.de;
+
+    location / {
+        proxy_pass http://127.0.0.1:3031;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+EOF
+
 sudo ln -sf /etc/nginx/sites-available/wetter.conf /etc/nginx/sites-enabled/wetter.conf
 sudo nginx -t
 sudo systemctl reload nginx
 
-# 5. SSL-Zertifikat
-sudo certbot --nginx -d wetter.elmarhepp.de
+# 6. SSL-Zertifikat (certbot ändert Config zu HTTPS automatisch)
+sudo certbot --nginx -d wetter.elmarhepp.de --non-interactive --agree-tos -m admin@elmarhepp.de
 
-# 6. Verifikation
+# 7. Verifikation
 docker compose ps
 sudo nginx -t
 curl -I https://wetter.elmarhepp.de/
@@ -95,6 +113,7 @@ curl -I https://wetter.elmarhepp.de/
 ## Rate Limits (Dashboard)
 
 Das Dashboard zeigt Live-Metriken:
+
 - Minute: `used/540` (600 - 10% safety margin)
 - Hour: `used/4500` (5000 - 10% safety margin)
 - Day: `used/9000` (10000 - 10% safety margin)
@@ -104,26 +123,69 @@ Das Dashboard zeigt Live-Metriken:
 
 ## Troubleshooting
 
+### Asset 404 Fehler (CSS, JS nicht gefunden)
+
+**Problem**: Browser zeigt `Failed to load resource: the server responded with a status of 404`
+
+**Ursache**: Falsche Pfade in `frontend/index.html` oder Router normalisiert nicht
+
+**Lösung prüfen**:
+1. `frontend/index.html` muss absolute Pfade haben:
+   ```html
+   <link rel="stylesheet" href="/frontend/style.css" />
+   <script src="/frontend/src/main.js"></script>
+   ```
+
+2. `index.php` muss `/frontend/` Prefix normalisieren (verhindert Verdopplung):
+   ```php
+   if (strpos($path, '/frontend/') === 0) {
+       $normalized_path = substr($path, strlen('/frontend'));
+   }
+   ```
+
+3. Browser-Cache leeren: `Cmd+Shift+R` (macOS) oder `Ctrl+Shift+R`
+
 ### Container startet nicht
+
 ```bash
 docker compose logs app
 docker compose up --build  # Rebuild versuchen
 ```
 
 ### Nginx-Error
+
 ```bash
 sudo nginx -t  # Syntax prüfen
 sudo systemctl status nginx
 sudo systemctl restart nginx
 ```
 
-### SSL-Fehler
+### SSL-Fehler beim Deploy
+
+**Problem**: `cannot load certificate... No such file or directory`
+
+**Ursache**: Nginx Config hat SSL Paths, aber Cert existiert noch nicht
+
+**Lösung**: Erst HTTP-only Config, dann Certbot, dann Nginx reload:
 ```bash
-sudo certbot renew --dry-run
-sudo certbot certificates
+# HTTP-only Nginx Config
+sudo tee /etc/nginx/sites-available/wetter.conf > /dev/null << 'EOF'
+server {
+    listen 80;
+    server_name wetter.elmarhepp.de;
+    location / {
+        proxy_pass http://127.0.0.1:3031;
+        # ... headers ...
+    }
+}
+EOF
+
+# Dann SSL mit Certbot
+sudo certbot --nginx -d wetter.elmarhepp.de --non-interactive --agree-tos -m admin@elmarhepp.de
 ```
 
 ### Rate Limiting ausgelöst
+
 - Cache-Hit prüfen: `/backend/proxy.php?api=dashboard`
 - Warten oder Server neustarten: `docker compose restart app`
 
