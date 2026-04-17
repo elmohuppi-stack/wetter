@@ -27,7 +27,7 @@ start:
 	@if [ -f $(PID_FILE) ] && kill -0 `cat $(PID_FILE)` 2>/dev/null; then \
 		echo "Server already running (PID $$(cat $(PID_FILE)))"; exit 1; \
 	fi
-	@php -S $(DEV_HOST):$(DEV_PORT) -t $(DOC_ROOT) > /dev/null 2>&1 & echo $$! > $(PID_FILE)
+	@php -S $(DEV_HOST):$(DEV_PORT) -t $(DOC_ROOT) -r index.php > /dev/null 2>&1 & echo $$! > $(PID_FILE)
 	@echo "Started (PID $$(cat $(PID_FILE)))"
 start: ## Start PHP dev server (serves frontend and proxy)
 

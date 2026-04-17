@@ -42,13 +42,16 @@ export default {
         const hourly = val.hourly || {};
         const times = hourly.time || [];
         const temps = hourly.temperature_2m || [];
-        // take next 12 entries
         const sliceCount = Math.min(12, temps.length);
         const labels = times
           .slice(0, sliceCount)
           .map((t) => t.replace("T", " "));
         const data = temps.slice(0, sliceCount);
-        if (data.length) this.renderChart(labels, data);
+        if (data.length) {
+          this.$nextTick(() => {
+            if (this.$refs.hourChart) this.renderChart(labels, data);
+          });
+        }
       },
     },
   },

@@ -1,13 +1,4 @@
 export default {
-  data() {
-    return {
-      days: [
-        { day: "Mo", hi: 20, lo: 12, cond: "Sonnig" },
-        { day: "Di", hi: 19, lo: 11, cond: "Wolkig" },
-        { day: "Mi", hi: 17, lo: 10, cond: "Regen" },
-      ],
-    };
-  },
   props: ["data"],
   computed: {
     days() {
