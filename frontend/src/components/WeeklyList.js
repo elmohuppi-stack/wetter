@@ -18,11 +18,11 @@ export default {
   methods: {
     formatDate(dateStr) {
       const date = new Date(dateStr + "T00:00:00");
-      return date.toLocaleDateString("de-DE", { 
-        weekday: "short", 
-        day: "2-digit", 
-        month: "2-digit", 
-        year: "numeric" 
+      return date.toLocaleDateString("de-DE", {
+        weekday: "short",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
       });
     },
   },
