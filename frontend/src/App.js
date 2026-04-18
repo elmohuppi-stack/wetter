@@ -39,6 +39,7 @@ export default {
       expertData: null,
       expertLoading: false,
       expertParameters: null,
+      expertApiUrl: "",
     };
   },
   template: `
@@ -64,6 +65,7 @@ export default {
 
         <!-- Historical Tab -->
         <div v-if="currentTab === 'historical'">
+          <h3 class="mt-6 text-2xl font-bold mb-4" :style="{ color: darkMode ? '#e0e0e0' : '#333' }">Historische Temperaturen</h3>
           <div class="mb-5 flex gap-3 items-center">
             <input v-model="startDate" type="date" :class="['px-3 py-2 border-2 rounded-lg', darkMode ? 'bg-slate-800 border-slate-600 text-gray-300' : 'bg-white border-slate-300 text-gray-900']" />
             <input v-model="endDate" type="date" :class="['px-3 py-2 border-2 rounded-lg', darkMode ? 'bg-slate-800 border-slate-600 text-gray-300' : 'bg-white border-slate-300 text-gray-900']" />
@@ -71,7 +73,6 @@ export default {
           </div>
           <div v-if="historicalLoading" class="text-center text-gray-500 mt-5 text-lg font-medium">Historische Daten werden geladen…</div>
           <div v-else-if="historicalData && !historicalData.error">
-            <h3 class="text-2xl font-bold mb-4">Historische Temperaturen</h3>
             <canvas ref="historicalChart" class="max-h-96"></canvas>
           </div>
           <div v-else-if="historicalData && historicalData.error" class="text-center text-red-500 mt-5 text-base">{{ historicalData.message }}</div>
@@ -79,14 +80,14 @@ export default {
 
         <!-- Seasonal Tab -->
         <div v-if="currentTab === 'seasonal'">
+          <h3 class="mt-6 text-2xl font-bold mb-4" :style="{ color: darkMode ? '#e0e0e0' : '#333' }">Saisonale Vorhersagen</h3>
           <div style="margin-bottom:20px">
             <button @click="fetchSeasonal" style="padding:12px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:500;cursor:pointer">Saisonale Vorhersagen laden</button>
           </div>
           <div v-if="seasonalLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Saisonale Daten werden geladen…</div>
           <div v-else-if="seasonalData && !seasonalData.error">
-            <h3>Saisonale Temperatur-Abweichungen</h3>
             <canvas ref="seasonalTempChart" style="max-height:400px"></canvas>
-            <h3>Saisonale Niederschlags-Abweichungen</h3>
+            <h3 class="mt-8 text-xl font-bold mb-4" :style="{ color: darkMode ? '#e0e0e0' : '#333' }">Niederschlags-Vorhersagen</h3>
             <canvas ref="seasonalPrecipChart" style="max-height:400px"></canvas>
           </div>
           <div v-else-if="seasonalData && seasonalData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ seasonalData.message }}</div>
@@ -94,12 +95,12 @@ export default {
 
         <!-- Climate Tab -->
         <div v-if="currentTab === 'climate'">
+          <h3 class="mt-6 text-2xl font-bold mb-4" :style="{ color: darkMode ? '#e0e0e0' : '#333' }">Klimaprojektionen</h3>
           <div style="margin-bottom:20px">
             <button @click="fetchClimate" style="padding:12px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:500;cursor:pointer">Klimaprojektionen laden</button>
           </div>
           <div v-if="climateLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Klimadaten werden geladen…</div>
           <div v-else-if="climateData && !climateData.error">
-            <h3>Klimaprojektionen: Temperaturänderungen</h3>
             <canvas ref="climateChart" style="max-height:400px"></canvas>
           </div>
           <div v-else-if="climateData && climateData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ climateData.message }}</div>
@@ -107,7 +108,7 @@ export default {
 
         <!-- Dashboard Tab -->
         <div v-if="currentTab === 'dashboard'">
-          <h3>API-Monitoring Dashboard</h3>
+          <h3 class="mt-6 text-2xl font-bold mb-4" :style="{ color: darkMode ? '#e0e0e0' : '#333' }">API-Monitoring Dashboard</h3>
           <div style="display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap">
             <div :style="{background:darkMode?'rgba(33,33,33,0.9)':'rgba(255,255,255,0.9)',padding:'16px',borderRadius:'12px',boxShadow:'0 4px 12px rgba(0,0,0,0.1)',flex:1,backdropFilter:'blur(10px)'}">
               <h4>API-Calls heute</h4>
@@ -144,7 +145,7 @@ export default {
           <Expert :darkMode="darkMode" :isLoading="expertLoading" @refresh-expert-data="handleRefreshExpert" />
           <div v-if="expertLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Expert-Daten werden geladen…</div>
           <div v-else-if="expertData && !expertData.error" style="margin-top:20px">
-            <ExpertResults :data="expertData" :darkMode="darkMode" />
+            <ExpertResults :data="expertData" :darkMode="darkMode" :apiUrl="expertApiUrl" />
           </div>
           <div v-else-if="expertData && expertData.error" style="text-align:center;color:#dc3545;margin-top:20px;font-size:16px">{{ expertData.message }}</div>
         </div>
@@ -547,11 +548,11 @@ export default {
         queryParams.append("hourly", selectedParameters.hourly.join(","));
       }
 
-      console.log(
-        "Expert API Call:",
-        `/backend/proxy.php?${queryParams.toString()}`,
-      );
-      fetch(`/backend/proxy.php?${queryParams.toString()}`)
+      const requestPath = `/backend/proxy.php?${queryParams.toString()}`;
+      this.expertApiUrl = `${window.location.origin}${requestPath}`;
+
+      console.log("Expert API Call:", requestPath);
+      fetch(requestPath)
         .then((r) => {
           console.log("Response status:", r.status);
           if (!r.ok) throw new Error(`HTTP ${r.status}`);

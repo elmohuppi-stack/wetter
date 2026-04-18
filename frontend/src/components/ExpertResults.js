@@ -2,13 +2,15 @@ export default {
   props: {
     data: Object,
     darkMode: Boolean,
+    apiUrl: String,
   },
   data() {
     return {
       currentExpanded: true,
       tableExpanded: false,
+      apiCallExpanded: false,
       chartTab: "hourly",
-      chartType: "line",
+      _charts: {},
       selectedDailyParams: [],
       selectedHourlyParams: [],
       chartColors: [
@@ -112,20 +114,17 @@ export default {
     data: {
       handler() {
         this.initSelectedParams();
-        this.$nextTick(() => this.renderChart());
+        this.$nextTick(() => this.renderCharts());
       },
       deep: true,
     },
     chartTab() {
-      this.$nextTick(() => this.renderChart());
-    },
-    chartType() {
-      this.$nextTick(() => this.renderChart());
+      this.$nextTick(() => this.renderCharts());
     },
     selectedDailyParams: {
       handler() {
         if (this.chartTab === "daily") {
-          this.$nextTick(() => this.renderChart());
+          this.$nextTick(() => this.renderCharts());
         }
       },
       deep: true,
@@ -133,7 +132,7 @@ export default {
     selectedHourlyParams: {
       handler() {
         if (this.chartTab === "hourly") {
-          this.$nextTick(() => this.renderChart());
+          this.$nextTick(() => this.renderCharts());
         }
       },
       deep: true,
@@ -141,16 +140,19 @@ export default {
   },
   mounted() {
     this.initSelectedParams();
-    if (this.data && this.$refs.chart) {
-      this.$nextTick(() => this.renderChart());
+    if (this.data) {
+      this.$nextTick(() => this.renderCharts());
     }
   },
-  updated() {
-    if (this.data && this.$refs.chart) {
-      this.$nextTick(() => {
-        this.renderChart();
-      });
-    }
+  beforeUnmount() {
+    Object.values(this._charts || {}).forEach((chart) => {
+      try {
+        chart?.destroy?.();
+      } catch (e) {
+        console.warn("Error destroying chart:", e);
+      }
+    });
+    this._charts = {};
   },
   methods: {
     getTranslation(key) {
@@ -158,6 +160,13 @@ export default {
     },
     getUnit(key) {
       return this.parameterUnits[key] || "";
+    },
+    formatJson(data) {
+      try {
+        return JSON.stringify(data, null, 2);
+      } catch {
+        return "{}";
+      }
     },
     chartableKeys(dataObj) {
       if (!dataObj) return [];
@@ -173,23 +182,11 @@ export default {
     initSelectedParams() {
       if (!this.data) return;
 
-      // Daily params
       const dailyKeys = this.chartableKeys(this.data.daily);
-      if (
-        this.selectedDailyParams.length === 0 ||
-        this.selectedDailyParams.some((k) => !dailyKeys.includes(k))
-      ) {
-        this.selectedDailyParams = dailyKeys.slice(0, 2);
-      }
-
-      // Hourly params
       const hourlyKeys = this.chartableKeys(this.data.hourly);
-      if (
-        this.selectedHourlyParams.length === 0 ||
-        this.selectedHourlyParams.some((k) => !hourlyKeys.includes(k))
-      ) {
-        this.selectedHourlyParams = hourlyKeys.slice(0, 2);
-      }
+
+      this.selectedDailyParams = dailyKeys;
+      this.selectedHourlyParams = hourlyKeys;
     },
     formatWeatherCode(code) {
       const descriptions = {
@@ -294,140 +291,166 @@ export default {
         minute: "2-digit",
       });
     },
-    renderChart() {
+    renderCharts() {
       const dataSource =
         this.chartTab === "daily" ? this.data?.daily : this.data?.hourly;
-      if (!dataSource || !dataSource.time || dataSource.time.length === 0)
+      if (!dataSource || !dataSource.time || dataSource.time.length === 0) {
         return;
+      }
 
       const selectedParams =
         this.chartTab === "daily"
           ? this.selectedDailyParams
           : this.selectedHourlyParams;
-      if (selectedParams.length === 0) return;
+      if (selectedParams.length === 0) {
+        Object.values(this._charts || {}).forEach((chart) => {
+          try {
+            chart?.destroy?.();
+          } catch {}
+        });
+        this._charts = {};
+        return;
+      }
 
-      const canvas = this.$refs.chart;
-      if (!canvas) return;
-
-      // Build datasets for each selected parameter
-      const datasets = selectedParams.map((paramKey, idx) => {
-        const values = dataSource[paramKey];
-        const unit = this.getUnit(paramKey);
-        const yAxisID = this.getYAxisID(selectedParams, paramKey);
-        const chartTypeActual =
-          this.chartType === "area" ? "line" : this.chartType;
-        const fill = this.chartType === "area";
-
-        return {
-          label: `${this.getTranslation(paramKey)} ${unit}`.trim(),
-          data: values,
-          borderColor: this.chartColors[idx % this.chartColors.length],
-          backgroundColor: `${this.chartColors[idx % this.chartColors.length]}20`,
-          fill: fill,
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.4,
-          yAxisID: yAxisID,
-          type: chartTypeActual,
-        };
+      Object.values(this._charts || {}).forEach((chart) => {
+        try {
+          chart?.destroy?.();
+        } catch {}
       });
+      this._charts = {};
 
-      const labels = dataSource.time.map((t, i) => {
-        if (this.chartTab === "daily") {
-          return this.formatDate(t);
-        } else {
-          // Show date label only when date changes (every 24 hours)
-          if (
-            i === 0 ||
-            (i > 0 &&
-              this.formatDate(t) !== this.formatDate(dataSource.time[i - 1]))
-          ) {
-            return this.formatDate(t);
-          }
-          return "";
-        }
-      });
+      this.$nextTick(() => {
+        const canvases = this.$el?.querySelectorAll("canvas[data-param]") || [];
 
-      // Build Y-axes configuration
-      const yAxes = this.buildYAxes(selectedParams);
+        canvases.forEach((canvas) => {
+          const paramKey = canvas.getAttribute("data-param");
+          if (!selectedParams.includes(paramKey)) return;
 
-      // Build X-axis configuration based on tab
-      const xAxisConfig = {
-        ticks: {
-          color: this.darkMode ? "#e0e0e0" : "#333",
-          maxTicksLimit: this.chartTab === "hourly" ? 30 : 7,
-          maxRotation: 0,
-          minRotation: 0,
-        },
-        grid: { color: this.darkMode ? "#333" : "#eee" },
-      };
+          const values = dataSource[paramKey];
+          const ctx = canvas.getContext("2d");
+          if (!values || !ctx) return;
 
-      if (this._chart) this._chart.destroy();
+          // Destroy any existing Chart instance on this specific canvas
+          try {
+            // Check all Chart instances and destroy those on this canvas
+            if (window.Chart && window.Chart.helpers) {
+              const toDestroy = [];
+              for (let key in this._charts) {
+                if (this._charts[key]?.canvas === canvas) {
+                  toDestroy.push(key);
+                }
+              }
+              toDestroy.forEach((key) => {
+                this._charts[key]?.destroy?.();
+                delete this._charts[key];
+              });
+            }
+          } catch {}
 
-      this._chart = new Chart(canvas.getContext("2d"), {
-        type: this.chartType === "bar" ? "bar" : "line",
-        data: {
-          labels: labels,
-          datasets: datasets,
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: "index", intersect: false },
-          plugins: {
-            legend: {
-              display: true,
-              labels: { color: this.darkMode ? "#e0e0e0" : "#333" },
+          const unit = this.getUnit(paramKey);
+          const chartType = this.chartTab === "daily" ? "bar" : "line";
+          const chartColor = "#7c3aed";
+
+          const labels = dataSource.time.map((t, i) => {
+            const date = new Date(t);
+            if (this.chartTab === "daily") {
+              // Format: DD.MM. (ohne Wochentag und Jahr)
+              return `${date.getDate().toString().padStart(2, "0")}.${(date.getMonth() + 1).toString().padStart(2, "0")}.`;
+            }
+            // Für stündliche Daten: zeige Datum DD.MM. bei Datumswechsel
+            if (
+              i === 0 ||
+              new Date(dataSource.time[i - 1]).toDateString() !==
+                date.toDateString()
+            ) {
+              return `${date.getDate().toString().padStart(2, "0")}.${(date.getMonth() + 1).toString().padStart(2, "0")}.`;
+            }
+            return "";
+          });
+
+          this._charts[paramKey] = new Chart(ctx, {
+            type: chartType,
+            data: {
+              labels,
+              datasets: [
+                {
+                  label: `${this.getTranslation(paramKey)} ${unit}`.trim(),
+                  data: values,
+                  borderColor: chartColor,
+                  backgroundColor: `${chartColor}${chartType === "bar" ? "cc" : "30"}`,
+                  fill: chartType === "line",
+                  borderWidth: chartType === "line" ? 2 : 0,
+                  pointRadius: chartType === "line" ? 0 : undefined,
+                  tension: chartType === "line" ? 0.4 : undefined,
+                },
+              ],
             },
-          },
-          scales: {
-            x: xAxisConfig,
-            ...yAxes,
-          },
-        },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: false,
+              interaction: { mode: "index", intersect: false },
+              plugins: {
+                legend: {
+                  display: false,
+                },
+                tooltip: {
+                  backgroundColor: this.darkMode
+                    ? "rgba(0,0,0,0.8)"
+                    : "rgba(0,0,0,0.7)",
+                  titleColor: "#fff",
+                  bodyColor: "#fff",
+                  borderColor: chartColor,
+                  borderWidth: 2,
+                  padding: 12,
+                  displayColors: true,
+                  callbacks: {
+                    title: (context) => {
+                      if (this.chartTab === "hourly" && context[0]) {
+                        const timeStr = dataSource.time[context[0].dataIndex];
+                        const date = new Date(timeStr);
+                        return date.toLocaleString("de-DE", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                      }
+                      return "";
+                    },
+                  },
+                },
+              },
+              scales: {
+                x: {
+                  ticks: {
+                    color: this.darkMode ? "#e0e0e0" : "#333",
+                    autoSkip: this.chartTab === "daily",
+                    maxTicksLimit: this.chartTab === "daily" ? 7 : undefined,
+                    maxRotation: 0,
+                    minRotation: 0,
+                    callback: (value, index) => labels[index] || "",
+                  },
+                  grid: { color: this.darkMode ? "#333" : "#eee" },
+                },
+                y: {
+                  type: "linear",
+                  display: true,
+                  position: "left",
+                  ticks: { color: this.darkMode ? "#e0e0e0" : "#333" },
+                  grid: { color: this.darkMode ? "#333" : "#eee" },
+                  title: {
+                    display: true,
+                    text: unit || "Wert",
+                    color: this.darkMode ? "#e0e0e0" : "#333",
+                  },
+                },
+              },
+            },
+          });
+        });
       });
-    },
-    getYAxisID(selectedParams, paramKey) {
-      const uniqueUnits = [
-        ...new Set(selectedParams.map((k) => this.getUnit(k))),
-      ];
-      const paramUnit = this.getUnit(paramKey);
-      const unitIndex = uniqueUnits.indexOf(paramUnit);
-      return unitIndex === 0 ? "y" : unitIndex === 1 ? "y1" : "y";
-    },
-    buildYAxes(selectedParams) {
-      const unitMap = {};
-      selectedParams.forEach((param) => {
-        const unit = this.getUnit(param);
-        if (!unitMap[unit]) {
-          unitMap[unit] = [];
-        }
-        unitMap[unit].push(param);
-      });
-
-      const uniqueUnits = Object.keys(unitMap);
-      const axes = {};
-
-      uniqueUnits.forEach((unit, idx) => {
-        const axisID = idx === 0 ? "y" : idx === 1 ? "y1" : "y";
-        axes[axisID] = {
-          type: "linear",
-          display: true,
-          position: idx === 0 ? "left" : "right",
-          ticks: { color: this.darkMode ? "#e0e0e0" : "#333" },
-          grid: {
-            color: this.darkMode ? "#333" : "#eee",
-            drawOnChartArea: idx === 0,
-          },
-          title: {
-            display: true,
-            text: unit || "Wert",
-            color: this.darkMode ? "#e0e0e0" : "#333",
-          },
-        };
-      });
-
-      return axes;
     },
   },
   template: `
@@ -466,51 +489,18 @@ export default {
         </button>
       </div>
 
-      <!-- Parameter-Checkboxen -->
-      <div v-if="data" :class="['mb-4 p-3 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
-        <div class="text-sm font-bold mb-2">Parameter auswählen:</div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-          <label v-for="param in chartableKeys(chartTab === 'daily' ? data?.daily : data?.hourly)" :key="param" class="flex items-center gap-1.5 text-xs cursor-pointer">
-            <input
-              type="checkbox"
-              :value="param"
-              v-model="currentSelectedParams"
-              class="m-0 accent-purple-600"
-            />
-            <span>{{ getTranslation(param) }}</span>
-          </label>
-        </div>
-      </div>
-
-      <!-- Chart-Typ-Buttons -->
-      <div v-if="data" class="mb-4 flex gap-2">
-        <button
-          :class="['px-3 py-1.5 rounded border-none cursor-pointer text-xs transition-colors', chartType === 'line' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
-          @click="chartType = 'line'"
-        >
-          Linie
-        </button>
-        <button
-          :class="['px-3 py-1.5 rounded border-none cursor-pointer text-xs transition-colors', chartType === 'area' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
-          @click="chartType = 'area'"
-        >
-          Fläche
-        </button>
-        <button
-          :class="['px-3 py-1.5 rounded border-none cursor-pointer text-xs transition-colors', chartType === 'bar' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
-          @click="chartType = 'bar'"
-        >
-          Balken
-        </button>
-      </div>
-
-      <!-- Chart Canvas -->
+      <!-- Charts Grid -->
       <div v-if="data" :class="['mb-6 p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
         <div v-if="currentSelectedParams.length === 0" :class="['text-center py-10', darkMode ? 'text-gray-600' : 'text-gray-400']">
-          Wähle mindestens einen Parameter aus, um die Grafik anzuzeigen.
+          Wähle mindestens einen Parameter aus, um die Grafiken anzuzeigen.
         </div>
-        <div v-else class="h-52">
-          <canvas ref="chart"></canvas>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div v-for="(param, idx) in currentSelectedParams" :key="param" :class="['p-3 rounded', darkMode ? 'bg-slate-700' : 'bg-gray-50']">
+            <div class="text-sm font-semibold mb-2" :style="{ color: darkMode ? '#e0e0e0' : '#333' }">{{ getTranslation(param) }}</div>
+            <div class="h-48">
+              <canvas :data-param="param"></canvas>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -561,6 +551,24 @@ export default {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accordion: API Call -->
+      <div :class="['mt-6 p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
+        <div class="flex items-center cursor-pointer mb-4" @click="apiCallExpanded = !apiCallExpanded">
+          <h3 class="m-0 flex-1 text-lg font-semibold">API Call</h3>
+          <span :class="['text-lg transition-transform', apiCallExpanded ? 'rotate-0' : '-rotate-90']">▼</span>
+        </div>
+        <div v-show="apiCallExpanded" class="space-y-4">
+          <div>
+            <div :class="['text-xs opacity-70 mb-1', darkMode ? 'text-gray-400' : 'text-gray-600']">URL</div>
+            <div :class="['text-xs break-all p-3 rounded', darkMode ? 'bg-slate-700 text-gray-200' : 'bg-gray-50 text-gray-800']">{{ apiUrl || 'Keine URL verfügbar' }}</div>
+          </div>
+          <div>
+            <div :class="['text-xs opacity-70 mb-1', darkMode ? 'text-gray-400' : 'text-gray-600']">JSON Ergebnis</div>
+            <pre :class="['text-xs p-3 rounded overflow-x-auto whitespace-pre-wrap', darkMode ? 'bg-slate-700 text-gray-200' : 'bg-gray-50 text-gray-800']">{{ formatJson(data) }}</pre>
           </div>
         </div>
       </div>
