@@ -2,6 +2,7 @@ export default {
   props: {
     darkMode: Boolean,
     isLoading: Boolean,
+    location: String,
   },
   emits: ["refresh-expert-data"],
   data() {
@@ -121,7 +122,7 @@ export default {
     <div style="padding: 0">
       <!-- Header and Info Row -->
       <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 24px">
-        <h2 class="mt-6 text-2xl font-bold" :style="{ marginBottom: '0', color: darkMode ? '#e0e0e0' : '#333', whiteSpace: 'nowrap' }">Open Meteo Forecast API Daten</h2>
+        <h2 class="mt-6 text-2xl font-bold" :style="{ marginBottom: '0', color: darkMode ? '#e0e0e0' : '#333', whiteSpace: 'nowrap' }">Open Meteo Forecast API Daten{{ location ? ' für ' + location : '' }}</h2>
         <!-- Action Buttons -->
         <div style="display: flex; flex-direction: row; gap: 8px; align-self: flex-start; flex-shrink: 0; margin-left: auto; margin-top: 16px">
           <button @click="handleRefresh" :disabled="isLoading"

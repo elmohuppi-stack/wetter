@@ -40,6 +40,8 @@ export default {
       expertLoading: false,
       expertParameters: null,
       expertApiUrl: "",
+      currentLat: null,
+      currentLon: null,
     };
   },
   template: `
@@ -142,7 +144,7 @@ export default {
 
         <!-- Expert Tab -->
         <div v-if="currentTab === 'expert'">
-          <Expert :darkMode="darkMode" :isLoading="expertLoading" @refresh-expert-data="handleRefreshExpert" />
+          <Expert :darkMode="darkMode" :isLoading="expertLoading" :location="locationName" @refresh-expert-data="handleRefreshExpert" />
           <div v-if="expertLoading" style="text-align:center;color:#666;margin-top:20px;font-size:18px;font-weight:500">Expert-Daten werden geladen…</div>
           <div v-else-if="expertData && !expertData.error" style="margin-top:20px">
             <ExpertResults :data="expertData" :darkMode="darkMode" :apiUrl="expertApiUrl" />
@@ -158,6 +160,8 @@ export default {
     fetchWeather(lat, lon, markAsCurrent = false) {
       this.loading = true;
       this.isCurrentLocation = !!markAsCurrent;
+      this.currentLat = lat;
+      this.currentLon = lon;
       fetch(
         `/backend/proxy.php?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`,
       )
@@ -530,8 +534,8 @@ export default {
       this.expertData = null;
       this.expertParameters = selectedParameters;
 
-      const lat = 49.05;
-      const lon = 8.2667;
+      const lat = this.currentLat || 49.05;
+      const lon = this.currentLon || 8.2667;
 
       const queryParams = new URLSearchParams();
       queryParams.append("lat", lat);
