@@ -52,8 +52,8 @@ export default {
         return;
       }
       this.map = L.map("map", {
-        center: [52.52, 13.405],
-        zoom: 10,
+        center: [51, 10],
+        zoom: 6,
         dragging: false,
         scrollWheelZoom: false,
         touchZoom: false,
@@ -76,7 +76,7 @@ export default {
       const lat = parseFloat(d.latitude);
       const lon = parseFloat(d.longitude);
       if (isNaN(lat) || isNaN(lon)) return;
-      this.map.setView([lat, lon], 10);
+      this.map.setView([lat, lon], 6);
       this.map.invalidateSize();
       if (this.marker) this.map.removeLayer(this.marker);
       try {
@@ -95,9 +95,7 @@ export default {
       const temp = d.current_weather
         ? Math.round(d.current_weather.temperature) + "°C"
         : "";
-      this.marker
-        .bindPopup(`<b>${temp}</b><br>${this.weatherIcon}`)
-        .openPopup();
+      this.marker.bindPopup(`<b>${temp}</b><br>${this.weatherIcon}`);
     },
   },
   watch: {

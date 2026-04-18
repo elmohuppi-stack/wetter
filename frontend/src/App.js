@@ -42,7 +42,7 @@ export default {
     };
   },
   template: `
-    <div :class="['min-h-screen transition-colors', darkMode ? 'bg-slate-900 text-gray-300' : 'bg-slate-50 text-gray-900']">
+    <div :class="['min-h-screen transition-colors', darkMode ? 'dark-mode bg-slate-900 text-gray-300' : 'bg-slate-50 text-gray-900']">
       <Header :darkMode="darkMode" :location="locationName" @toggle-dark-mode="toggleDarkMode" @search-location="searchLocation" @use-geolocation="useGeolocation" />
       <Sidebar :currentTab="currentTab" :darkMode="darkMode" @tab-change="currentTab = $event" />
       

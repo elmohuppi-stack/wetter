@@ -41,17 +41,87 @@ export default {
       const d = this.currentData;
       return d ? Math.round(d.temperature_2m ?? d.temperature) : "--";
     },
+    maxTemp() {
+      if (!this.data || !this.data.daily) return "--";
+      const temps = this.data.daily.temperature_2m_max || [];
+      return temps.length > 0 ? Math.round(temps[0]) : "--";
+    },
+    minTemp() {
+      if (!this.data || !this.data.daily) return "--";
+      const temps = this.data.daily.temperature_2m_min || [];
+      return temps.length > 0 ? Math.round(temps[0]) : "--";
+    },
     feels() {
       const d = this.currentData;
       return d && d.apparent_temperature != null
         ? Math.round(d.apparent_temperature)
         : "--";
     },
+    windSpeed() {
+      const d = this.currentData;
+      return d && d.wind_speed_10m != null
+        ? Math.round(d.wind_speed_10m)
+        : "--";
+    },
+    windDirection() {
+      const d = this.currentData;
+      return d && d.wind_direction_10m != null
+        ? Math.round(d.wind_direction_10m)
+        : "--";
+    },
+    windDirectionLabel() {
+      const angle = this.currentData?.wind_direction_10m;
+      if (!angle && angle !== 0) return "";
+      const directions = ["N", "NO", "O", "SO", "S", "SW", "W", "NW"];
+      return directions[Math.round(angle / 45) % 8];
+    },
+    precipitation() {
+      const d = this.currentData;
+      return d && d.precipitation != null
+        ? Math.round(d.precipitation * 10) / 10
+        : "--";
+    },
+    precipitationProbability() {
+      const d = this.currentData;
+      return d && d.precipitation_probability != null
+        ? Math.round(d.precipitation_probability)
+        : "--";
+    },
+    weatherDescription() {
+      const code =
+        this.currentData?.weather_code ?? this.currentData?.weathercode;
+      const descriptions = {
+        0: "Klarer Himmel",
+        1: "Überwiegend klar",
+        2: "Teilweise bewölkt",
+        3: "Bedeckt",
+        45: "Neblig",
+        48: "Neblig mit Reifansatz",
+        51: "Leichter Nieselregen",
+        53: "Mäßiger Nieselregen",
+        55: "Dichter Nieselregen",
+        61: "Leichter Regen",
+        63: "Mäßiger Regen",
+        65: "Starker Regen",
+        71: "Leichter Schneefall",
+        73: "Mäßiger Schneefall",
+        75: "Starker Schneefall",
+        80: "Leichte Regenschauer",
+        81: "Mäßige Regenschauer",
+        82: "Kräftige Regenschauer",
+        85: "Leichte Schneeschauer",
+        86: "Kräftige Schneeschauer",
+        95: "Gewitter",
+        96: "Gewitter mit Hagel",
+        99: "Gewitter mit Hagel",
+      };
+      return descriptions[code] || "Wetter";
+    },
     city() {
       return this.location || "Standort";
     },
     condition() {
-      if (!this.ready) return "Lade...";
+      if (!this.ready) return "🌤️";
       const code =
         this.currentData.weather_code ?? this.currentData.weathercode;
       const icons = {
@@ -116,28 +186,31 @@ export default {
   template: `
     <div>
       <!-- Measurement Time -->
-      <div v-if="data && data.current && data.current.time" class="text-xs text-gray-400 mb-2">Messzeitpunkt: {{ formatTime(data.current.time) }}</div>
+      <div v-if="data && data.current && data.current.time" class="text-xs text-gray-400 dark:text-gray-500 mb-2">Messzeitpunkt: {{ formatTime(data.current.time) }}</div>
       
       <!-- Main Temperature Box -->
-      <div class="flex items-center gap-4 mb-3 p-3 bg-gradient-to-br from-purple-100 to-violet-100 dark:from-purple-900 dark:to-violet-900 rounded-lg">
-        <div class="text-6xl font-bold text-gray-900 dark:text-white">{{ temp }}°C</div>
+      <div class="flex items-center gap-4 mb-3 p-3 rounded-lg" :style="{ background: darkMode ? 'linear-gradient(135deg, #581c87, #2e1065)' : 'linear-gradient(135deg, #d8b4fe, #c4b5fd)' }">
+        <div :class="['text-6xl font-bold', darkMode ? 'text-white' : 'text-gray-900']">{{ temp }}°C</div>
         <div class="flex-1">
-          <div class="text-xl font-semibold flex items-center gap-2 text-gray-700 dark:text-gray-300 mb-1">
+          <div :class="['text-xl font-semibold flex items-center gap-2 mb-1', darkMode ? 'text-white' : 'text-gray-700']">
             <span>{{ city }}</span>
             <svg v-if="isCurrent" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a8 8 0 10-14.8 0L12 21z"></path></svg>
           </div>
-          <div class="text-gray-600 dark:text-gray-400">{{ condition }} — gefühlt {{ feels }}°C</div>
+          <div :class="[darkMode ? 'text-gray-300' : 'text-gray-600']">{{ condition }} gefühlt {{ feels }}°C ({{ maxTemp }}° / {{ minTemp }}°)</div>
         </div>
       </div>
 
-      <!-- Current Values Grid -->
-      <div v-if="data && data.current" class="grid grid-cols-5 gap-2">
-        <template v-for="key in Object.keys(parameterTranslations)" :key="key">
-          <div v-if="data.current[key] !== undefined" class="p-2 bg-gradient-to-br from-purple-50 to-violet-50 dark:from-purple-950 dark:to-violet-950 rounded text-center">
-            <div class="text-xs text-gray-600 dark:text-gray-400 mb-1 leading-tight">{{ getTranslation(key) }}</div>
-            <div class="text-sm font-bold text-blue-600 dark:text-blue-400">{{ formatValue(data.current[key], key) }}<span v-if="getUnit(key)" class="text-xs font-normal ml-0.5 opacity-80">{{ getUnit(key) }}</span></div>
-          </div>
-        </template>
+      <!-- Weather Details -->
+      <div v-if="ready" class="space-y-2 mb-4">
+        <div class="text-gray-500 dark:text-gray-500">
+          <span class="font-medium">Wetter:</span> {{ weatherDescription }}
+        </div>
+        <div class="text-gray-500 dark:text-gray-500">
+          <span class="font-medium">Wind:</span> {{ windSpeed }} km/h {{ windDirectionLabel }}
+        </div>
+        <div class="text-gray-500 dark:text-gray-500">
+          <span class="font-medium">Regenwahrscheinlichkeit:</span> {{ precipitationProbability }}%
+        </div>
       </div>
     </div>
   `,

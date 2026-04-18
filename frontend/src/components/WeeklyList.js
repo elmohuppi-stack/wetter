@@ -31,8 +31,8 @@ export default {
         <h4 class="text-lg font-semibold mb-3">Nächste Tage</h4>
         <ul class="list-none p-0 m-0">
           <li v-for="d in days" :key="d.day" class="py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between">
-            <div class="text-gray-700 dark:text-gray-300">{{ formatDate(d.day) }}</div>
-            <div class="font-semibold text-gray-900 dark:text-white">{{ d.hi }}° / {{ d.lo }}°</div>
+            <div class="text-slate-900 dark:text-gray-200">{{ formatDate(d.day) }}</div>
+            <div class="font-semibold text-slate-900 dark:text-gray-100">{{ d.hi }}° / {{ d.lo }}°</div>
           </li>
         </ul>
       </div>
