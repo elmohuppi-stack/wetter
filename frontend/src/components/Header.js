@@ -3,7 +3,7 @@ export default {
     darkMode: Boolean,
     location: String,
   },
-  emits: ["toggle-dark-mode", "search-location", "use-geolocation"],
+  emits: ["toggle-dark-mode", "search-location", "use-geolocation", "go-home"],
   data() {
     return {
       searchExpanded: false,
@@ -38,12 +38,15 @@ export default {
     handleGeolocation() {
       this.$emit("use-geolocation");
     },
+    goHome() {
+      this.$emit("go-home");
+    },
   },
   template: `
     <header class="fixed top-0 left-0 right-0 z-50 h-15 bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-lg flex items-center justify-between px-6 py-3">
       <div class="flex items-center gap-3 flex-1 min-w-0">
-        <div class="text-2xl font-bold">🌤️</div>
-        <h1 class="text-xl font-semibold truncate">{{ location ? 'Wetter in ' + location : 'Wetter' }}</h1>
+        <div class="text-2xl font-bold cursor-pointer hover:opacity-80 transition-opacity" @click="goHome">🌤️</div>
+        <h1 class="text-xl font-semibold truncate cursor-pointer hover:opacity-80 transition-opacity" @click="goHome">{{ location ? 'Wetter in ' + location : 'Wetter' }}</h1>
       </div>
 
       <!-- Location Search Section -->

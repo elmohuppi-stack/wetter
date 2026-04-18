@@ -24,6 +24,8 @@ export default {
         precipitation: "mm",
         cloud_cover: "%",
       },
+      currentTime: new Date(),
+      timeInterval: null,
     };
   },
   computed: {
@@ -83,9 +85,19 @@ export default {
     },
     precipitationProbability() {
       const d = this.currentData;
-      return d && d.precipitation_probability != null
-        ? Math.round(d.precipitation_probability)
-        : "--";
+      if (d && d.precipitation_probability != null) {
+        return Math.round(d.precipitation_probability);
+      }
+      // Fallback: Versuche aus hourly Daten zu ermitteln
+      if (
+        this.data &&
+        this.data.hourly &&
+        this.data.hourly.precipitation_probability
+      ) {
+        const probs = this.data.hourly.precipitation_probability;
+        return probs.length > 0 ? Math.round(probs[0]) : "0";
+      }
+      return "0";
     },
     weatherDescription() {
       const code =
@@ -182,24 +194,54 @@ export default {
         minute: "2-digit",
       });
     },
+    formatTimeOnly(timeStr) {
+      if (!timeStr) return "";
+      const date = new Date(timeStr);
+      return date.toLocaleString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+    },
+    formatCurrentTime() {
+      return this.currentTime.toLocaleString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+    },
+  },
+  mounted() {
+    this.currentTime = new Date();
+    this.timeInterval = setInterval(() => {
+      this.currentTime = new Date();
+    }, 1000);
+  },
+  beforeUnmount() {
+    if (this.timeInterval) {
+      clearInterval(this.timeInterval);
+    }
   },
   template: `
     <div>
-      <!-- Measurement Time -->
-      <div v-if="data && data.current && data.current.time" class="text-xs text-gray-400 dark:text-gray-500 mb-2">Messzeitpunkt: {{ formatTime(data.current.time) }}</div>
-      
       <!-- Main Temperature Box -->
       <div class="flex items-center gap-4 mb-3 p-3 rounded-lg" :style="{ background: darkMode ? 'linear-gradient(135deg, #581c87, #2e1065)' : 'linear-gradient(135deg, #d8b4fe, #c4b5fd)' }">
         <div :class="['text-6xl font-bold', darkMode ? 'text-white' : 'text-gray-900']">{{ temp }}°C</div>
         <div class="flex-1">
-          <div :class="['text-xl font-semibold flex items-center gap-2 mb-1', darkMode ? 'text-white' : 'text-gray-700']">
-            <span>{{ city }}</span>
-            <svg v-if="isCurrent" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a8 8 0 10-14.8 0L12 21z"></path></svg>
+          <div :class="['text-xl font-semibold flex items-center justify-between mb-1 w-full', darkMode ? 'text-white' : 'text-gray-700']">
+            <div class="flex items-center gap-2">
+              <span>{{ city }}</span>
+              <svg v-if="isCurrent" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#667eea" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a8 8 0 10-14.8 0L12 21z"></path></svg>
+            </div>
+            <span v-if="data && data.current && data.current.time" class="text-xl" style="font-family: monospace; font-variant-numeric: tabular-nums; min-width: 4rem; display: inline-block;">{{ formatCurrentTime() }}</span>
           </div>
-          <div :class="[darkMode ? 'text-gray-300' : 'text-gray-600']">{{ condition }} gefühlt {{ feels }}°C ({{ maxTemp }}° / {{ minTemp }}°)</div>
+          <div :class="[darkMode ? 'text-gray-300' : 'text-gray-600']">{{ condition }} {{ maxTemp }}° / {{ minTemp }}° - gefühlt {{ feels }}°C</div>
         </div>
       </div>
 
+      <!-- Measurement Time -->
+      <div v-if="data && data.current && data.current.time" class="text-xs text-gray-400 dark:text-gray-500 mb-4">Messzeitpunkt: {{ formatTime(data.current.time) }}</div>
+      
       <!-- Weather Details -->
       <div v-if="ready" class="space-y-2 mb-4">
         <div class="text-gray-500 dark:text-gray-500">
