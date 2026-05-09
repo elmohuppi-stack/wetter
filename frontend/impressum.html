@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/frontend/style.css" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🌤️</text></svg>"
+    />
+    <title>Impressum — Wetter</title>
+    <style>
+      body {
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #1a1a1a;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+      .card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 32px;
+        border-radius: 16px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #333;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 12px;
+        margin-top: 0;
+      }
+      h2 {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #444;
+        margin-top: 28px;
+      }
+      p {
+        margin: 8px 0;
+        color: #555;
+      }
+      a {
+        color: #667eea;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .back-link {
+        display: inline-block;
+        margin-top: 24px;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: opacity 0.2s;
+      }
+      .back-link:hover {
+        opacity: 0.9;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>Impressum</h1>
+
+        <h2>Angaben gemäß § 5 TMG</h2>
+        <p>
+          Elmar Hepp<br />
+          [Straße und Hausnummer]<br />
+          [PLZ Ort]
+        </p>
+
+        <h2>Kontakt</h2>
+        <p>
+          E-Mail: elmar.hepp@googlemail.com
+        </p>
+
+        <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
+        <p>
+          Elmar Hepp<br />
+          [Straße und Hausnummer]<br />
+          [PLZ Ort]
+        </p>
+
+        <h2>Haftungsausschluss</h2>
+        <p>
+          <strong>Haftung für Inhalte</strong><br />
+          Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit,
+          Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen.
+          Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten
+          nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als
+          Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde
+          Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige
+          Tätigkeit hinweisen.
+        </p>
+        <p>
+          <strong>Haftung für Links</strong><br />
+          Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen
+          Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr
+          übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder
+          Betreiber der Seiten verantwortlich.
+        </p>
+
+        <h2>Urheberrecht</h2>
+        <p>
+          Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen
+          dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art
+          der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen
+          Zustimmung des jeweiligen Autors bzw. Erstellers.
+        </p>
+
+        <p>
+          <strong>Datenquelle</strong><br />
+          Die Wetterdaten werden über die
+          <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo API</a>
+          bezogen. Geodaten werden über
+          <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim (OpenStreetMap)</a>
+          bereitgestellt.
+        </p>
+
+        <a href="/" class="back-link">← Zurück zur Wetter-App</a>
+      </div>
+    </div>
+  </body>
+</html>
