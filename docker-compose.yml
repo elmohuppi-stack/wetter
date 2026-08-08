@@ -1,7 +1,13 @@
 version: "3.8"
 
 services:
-  app:
+  # Der Service heisst nicht "app". Compose setzt den Service-Namen in jedem
+  # Netz als Alias, und das Default-Netz ist hier das geteilte hetzner-network.
+  # Dort trugen am 8. August vier Container gleichzeitig den Alias "app" -
+  # Docker-DNS lieferte sie im Wechsel, und knoras Frontend proxyte seine
+  # API-Calls reihum an fremde Anwendungen. Im geteilten Netz muss der
+  # Servicename app-weit eindeutig sein; container_name bleibt wetter-app.
+  wetter:
     build:
       context: .
       dockerfile: Dockerfile
