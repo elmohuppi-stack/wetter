@@ -3,12 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <!--
+      Google Fonts entfernt am 9. August 2026. Der Aufruf übertrug bei jedem
+      Seitenaufruf die IP-Adresse an Google, ohne dass die Datenschutzerklärung
+      das erwähnte. Die Schrift kommt jetzt vom Gerät des Nutzers; die
+      font-family-Angaben behalten Inter als ersten Wunsch und fallen sonst auf
+      die Systemschrift zurück. Wer Inter zwingend will, hostet sie selbst.
+    -->
     <link rel="stylesheet" href="/frontend/style.css" />
     <link
       rel="icon"
@@ -99,7 +100,22 @@
         <h2>2. Verantwortlicher</h2>
         <p>
           Elmar Hepp<br />
-          E-Mail: elmar.hepp@googlemail.com
+          E-Mail: <a href="mailto:elmar.hepp@gmail.com">elmar.hepp@gmail.com</a>
+        </p>
+        <p>
+          Die vollständige Anschrift steht im
+          <a href="https://elmarhepp.de/impressum">Impressum</a>, das für alle
+          Anwendungen unter elmarhepp.de gemeinsam gilt.
+        </p>
+
+        <p>
+          Diese Erklärung beschreibt, was <strong>diese</strong> App verarbeitet.
+          Was für alle Anwendungen auf demselben Server gleich ist — Aufbewahrung
+          der Server-Logdaten, Hosting durch Hetzner als Auftragsverarbeiter und
+          die TLS-Verschlüsselung — steht in der
+          <a href="https://elmarhepp.de/datenschutz"
+            >gemeinsamen Datenschutzerklärung</a
+          >. Beides zusammen ergibt das vollständige Bild.
         </p>
 
         <h2>3. Datenerfassung auf dieser Website</h2>
@@ -162,16 +178,16 @@
 
         <p>
           <strong>Chart.js</strong><br />
-          Zur Darstellung von Diagrammen wird die Bibliothek Chart.js verwendet, die über ein
-          CDN (Content Delivery Network) eingebunden wird. Dabei kann die IP-Adresse des
-          aufrufenden Geräts an den CDN-Anbieter übermittelt werden.
+          Zur Darstellung von Diagrammen wird die Bibliothek Chart.js verwendet. Sie wird über
+          das Content Delivery Network <strong>jsDelivr</strong> geladen; dabei wird die
+          IP-Adresse Ihres Geräts an dessen Betreiber übermittelt.
         </p>
 
         <p>
           <strong>Leaflet</strong><br />
-          Für die Kartendarstellung wird die Bibliothek Leaflet verwendet, die über ein CDN
-          eingebunden wird. Dabei kann die IP-Adresse des aufrufenden Geräts an den
-          CDN-Anbieter übermittelt werden.
+          Für die Kartendarstellung wird die Bibliothek Leaflet verwendet. Sie wird über das
+          Content Delivery Network <strong>unpkg</strong> geladen; dabei wird die
+          IP-Adresse Ihres Geräts an dessen Betreiber übermittelt.
         </p>
 
         <h2>5. Ihre Rechte</h2>

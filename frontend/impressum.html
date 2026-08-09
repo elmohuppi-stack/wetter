@@ -3,12 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <!--
+      Google Fonts entfernt am 9. August 2026. Der Aufruf übertrug bei jedem
+      Seitenaufruf die IP-Adresse an Google, ohne dass die Datenschutzerklärung
+      das erwähnte. Die Schrift kommt jetzt vom Gerät des Nutzers; die
+      font-family-Angaben behalten Inter als ersten Wunsch und fallen sonst auf
+      die Systemschrift zurück. Wer Inter zwingend will, hostet sie selbst.
+    -->
     <link rel="stylesheet" href="/frontend/style.css" />
     <link
       rel="icon"
@@ -85,62 +86,35 @@
       <div class="card">
         <h1>Impressum</h1>
 
-        <h2>Angaben gemäß § 5 TMG</h2>
         <p>
-          Elmar Hepp<br />
-          [Straße und Hausnummer]<br />
-          [PLZ Ort]
+          Das Impressum gilt gemeinsam für <strong>elmarhepp.de</strong> und alle
+          Anwendungen unter dieser Domain — auch für diese. Es steht deshalb an
+          einer Stelle und nicht in jeder App neu:
         </p>
 
-        <h2>Kontakt</h2>
-        <p>
-          E-Mail: elmar.hepp@googlemail.com
-        </p>
-
-        <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
-        <p>
-          Elmar Hepp<br />
-          [Straße und Hausnummer]<br />
-          [PLZ Ort]
-        </p>
-
-        <h2>Haftungsausschluss</h2>
-        <p>
-          <strong>Haftung für Inhalte</strong><br />
-          Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit,
-          Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen.
-          Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten
-          nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als
-          Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde
-          Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige
-          Tätigkeit hinweisen.
-        </p>
-        <p>
-          <strong>Haftung für Links</strong><br />
-          Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen
-          Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr
-          übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder
-          Betreiber der Seiten verantwortlich.
-        </p>
-
-        <h2>Urheberrecht</h2>
-        <p>
-          Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen
-          dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art
-          der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen
-          Zustimmung des jeweiligen Autors bzw. Erstellers.
+        <p style="margin: 24px 0">
+          <a
+            class="back-link"
+            href="https://elmarhepp.de/impressum"
+            style="margin-top: 0"
+            >Impressum von elmarhepp.de öffnen →</a
+          >
         </p>
 
         <p>
-          <strong>Datenquelle</strong><br />
-          Die Wetterdaten werden über die
-          <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo API</a>
-          bezogen. Geodaten werden über
-          <a href="https://nominatim.openstreetmap.org/" target="_blank" rel="noopener">Nominatim (OpenStreetMap)</a>
-          bereitgestellt.
+          Dort stehen die Angaben nach § 5 DDG: Name, ladungsfähige Anschrift,
+          Kontakt und der inhaltlich Verantwortliche nach § 18 Abs. 2 MStV.
         </p>
 
-        <a href="/" class="back-link">← Zurück zur Wetter-App</a>
+        <h2>Datenschutz</h2>
+        <p>
+          Diese App verarbeitet Daten, die andere Anwendungen nicht verarbeiten —
+          Ihren Standort, Ortssuchen und Abfragen an externe Wetterdienste. Das
+          steht deshalb weiterhin hier:
+          <a href="/datenschutz.html">Datenschutzerklärung dieser App</a>.
+        </p>
+
+        <a class="back-link" href="/">← Zurück zur App</a>
       </div>
     </div>
   </body>
