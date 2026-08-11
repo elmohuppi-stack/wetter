@@ -93,7 +93,7 @@ docker compose restart app
 docker compose down
 
 # Update (git pull + rebuild)
-git pull origin master
+git pull origin main
 docker compose up -d --build
 ```
 

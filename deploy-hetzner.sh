@@ -17,7 +17,7 @@ if [ ! -d "$DEPLOY_PATH" ]; then
 else
     echo "   → Update Repository"
     cd "$DEPLOY_PATH"
-    git pull origin master
+    git pull origin main
 fi
 
 # 2. .env prüfen
