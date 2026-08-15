@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   # Der Service heisst nicht "app". Compose setzt den Service-Namen in jedem
-  # Netz als Alias, und das Default-Netz ist hier das geteilte hetzner-network.
+  # Netz als Alias, und das Default-Netz ist hier das geteilte apps-net.
   # Dort trugen am 8. August vier Container gleichzeitig den Alias "app" -
   # Docker-DNS lieferte sie im Wechsel, und knoras Frontend proxyte seine
   # API-Calls reihum an fremde Anwendungen. Im geteilten Netz muss der
@@ -24,5 +24,5 @@ services:
 
 networks:
   default:
-    name: hetzner-network
+    name: apps-net
     external: true

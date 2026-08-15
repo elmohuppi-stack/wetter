@@ -35,7 +35,7 @@ fi
 
 # 3. Docker network erstellen (falls nicht vorhanden)
 echo "3. Docker network prüfen..."
-docker network create hetzner-network 2>/dev/null || echo "   → Network existiert bereits"
+docker network create apps-net 2>/dev/null || echo "   → Network existiert bereits"
 
 # 4. Docker Compose bauen und starten
 echo "4. Docker Compose bauen und starten..."

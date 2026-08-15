@@ -43,7 +43,7 @@ DEPLOY_PATH=/var/www/wetter
 EOF
 
 # 3. Docker Network erstellen (einmalig pro Server)
-docker network create hetzner-network || true
+docker network create apps-net || true
 
 # 4. Docker Compose starten
 docker compose up -d --build
