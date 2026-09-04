@@ -129,8 +129,12 @@ switch ($api) {
             'latitude' => $lat,
             'longitude' => $lon,
             'current' => 'temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,wind_gusts_10m,wind_direction_10m,pressure_msl,precipitation,cloud_cover',
-            'hourly' => 'temperature_2m,precipitation,weathercode',
-            'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode',
+            // Die Google-Darstellung zeigt pro Stunde Regenwahrscheinlichkeit,
+            // Luftfeuchte und Wind mit Richtung — die kamen bisher nicht mit.
+            'hourly' => 'temperature_2m,precipitation,precipitation_probability,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weathercode',
+            'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,weathercode',
+            // Google zeigt acht Tage in der Leiste, Open-Meteo liefert per Default sieben.
+            'forecast_days' => 8,
             'timezone' => 'auto',
         ];
         $cacheTtl = 900; // 15 min for forecast

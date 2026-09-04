@@ -6,11 +6,10 @@ Eine umfassende Wetter-App für Meteorologie-Interessierte, gebaut mit Vue.js, C
 
 ### Wetter-Daten
 
-- **Forecast**: Aktuelle Wettervorhersagen mit stündlichen und täglichen Daten
-- **Historical**: Historische Wetterdaten für Vergleiche (seit 1940)
-- **Seasonal**: Saisonale Vorhersagen mit Wahrscheinlichkeiten
-- **Climate**: Klimaprojektionen bis 2100 basierend auf CMIP6-Modellen
-- **Expert-Tab**: Freie Parameterauswahl für Open-Meteo API (Aktuelle, Tägliche, Stündliche Daten)
+- **Wetter**: Vorhersage für acht Tage — Temperatur, Niederschlag und Wind im
+  Dreistundenraster, Tag für Tag anklickbar
+- **Experte**: Freie Parameterauswahl für die Open-Meteo API (Aktuelle, Tägliche, Stündliche Daten)
+- **Monitoring**: Verbrauch gegenüber den Rate-Limits, CSV-Export der Vorhersage
 
 ### System
 
@@ -23,7 +22,7 @@ Eine umfassende Wetter-App für Meteorologie-Interessierte, gebaut mit Vue.js, C
 
 ## 🛠 Technologie-Stack
 
-- **Frontend**: Vue.js 3 (CDN), Chart.js, Leaflet
+- **Frontend**: Vue.js 3 (CDN), Chart.js
 - **Styling**: Tailwind CSS v3.4.0 (produktiv)
 - **Backend**: PHP Proxy mit 4-tier Rate Limiting und Caching
 - **APIs**: Open-Meteo (kostenlos, keine Authentifizierung erforderlich)
@@ -85,9 +84,6 @@ make clean          # node_modules aufräumen
 
 - **Forecast**: 15 Minuten Cache
 - **Expert**: 15 Minuten Cache
-- **Historical**: 1 Stunde Cache
-- **Seasonal**: 6 Stunden Cache
-- **Climate**: 24 Stunden Cache
 
 ### Dashboard-Metriken
 

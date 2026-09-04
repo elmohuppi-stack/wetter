@@ -20,7 +20,7 @@ Dieses Dokument beschreibt Architektur, Konventionen und bekannte Eigenheiten de
 - **Proxy**: `backend/proxy.php` — Open-Meteo API-Proxy
 - **Features**:
   - 4-tier Rate Limiting (600/min, 5000/h, 10000/day, 300000/month)
-  - Intelligentes Caching (15min Forecast, 1h Historical, 6h Seasonal, 24h Climate)
+  - Intelligentes Caching (15 min Forecast und Expert)
   - Dashboard API für Live-Metriken
   - JSON-Response mit Fehlerbehandlung
 
@@ -63,12 +63,10 @@ npm run watch:css     # Tailwind CLI mit --watch
 | Datei               | Zweck                                                       |
 | ------------------- | ----------------------------------------------------------- |
 | `App.js`            | Root, Tab-Routing, Standort, API-Calls, State Management    |
-| `Header.js`         | Suchfeld, Geolocation, Dark Mode Toggle                     |
-| `Sidebar.js`        | Tab-Navigation                                              |
-| `CurrentWeather.js` | Aktuelle Daten (Fallback: `current_weather` oder `current`) |
-| `HourlyTimeline.js` | Stündliche Vorhersage + Chart.js                            |
-| `WeeklyList.js`     | 7-Tage-Übersicht                                            |
-| `MapPreview.js`     | Leaflet-Kartenvorschau                                      |
+| `NavTabs.js`        | Reiterleiste, rechts Ortswahl und Dark Mode Toggle          |
+| `LocationDialog.js` | Ortssuche als Dialog (Nominatim oder Geolocation)           |
+| `WeatherPanel.js`   | Wetterkarte: Kopfwerte, Metrik-Reiter, Diagramm, 8-Tage-Leiste |
+| `weatherCodes.js`   | Wettercode → Symbol und Kurztext (in `src/`, keine Komponente) |
 | `Expert.js`         | Parameter-Auswahl (Accordions, Buttons)                     |
 | `ExpertResults.js`  | Ergebnisse (Grid, Tabellen, Charts)                         |
 
@@ -100,9 +98,6 @@ $limits = [
 
 - **Forecast**: 900s (15 min)
 - **Expert**: 900s (15 min)
-- **Historical**: 3600s (1 h)
-- **Seasonal**: 21600s (6 h)
-- **Climate**: 86400s (24 h)
 
 ### Cache-Key Generierung
 
@@ -173,13 +168,11 @@ GET /backend/proxy.php?api=expert&lat=X&lon=Y&current=...&daily=...&hourly=...
   → Benutzerdefinierte Parameter
 
 GET /backend/proxy.php?api=historical&lat=X&lon=Y&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
-  → Historische Daten
-
 GET /backend/proxy.php?api=seasonal&lat=X&lon=Y
-  → Saisonale Vorhersagen
-
 GET /backend/proxy.php?api=climate&lat=X&lon=Y
-  → Klimaprojektionen
+  → funktionieren weiterhin, werden seit dem 4. September 2026 aber von keiner
+    Oberfläche mehr aufgerufen; die Reiter Rückblick, Saison und Klima sind
+    entfallen
 
 GET /backend/proxy.php?api=dashboard
   → Monitoring & Metriken
@@ -264,12 +257,10 @@ make open      # Frontend im Browser öffnen (macOS)
 | Datei               | Zweck                                                                            |
 | ------------------- | -------------------------------------------------------------------------------- |
 | `App.js`            | Root-Komponente, Tab-Routing, Standortverwaltung, API-Aufrufe                    |
-| `Header.js`         | Expandierbares Suchfeld, Geolocation-Button                                      |
-| `Sidebar.js`        | Tab-Navigation                                                                   |
-| `CurrentWeather.js` | Aktuelle Wetterdaten (liest aus `data.current`, Fallback `data.current_weather`) |
-| `HourlyTimeline.js` | Stündliche Vorhersage mit Chart.js                                               |
-| `WeeklyList.js`     | 7-Tage-Übersicht                                                                 |
-| `MapPreview.js`     | Kartenvorschau mit Leaflet                                                       |
+| `NavTabs.js`        | Waagerechte Reiterleiste, rechts Ortswahl und Dark Mode Toggle                   |
+| `LocationDialog.js` | Ortssuche als Dialog — geöffnet über „Region auswählen" oder den Stecknadel-Knopf|
+| `WeatherPanel.js`   | Wetterkarte im Google-Zuschnitt (Kopfwerte, Metrik-Reiter, Diagramm, Tagesleiste)|
+| `weatherCodes.js`   | Wettercode → Symbol und Kurztext (liegt in `src/`, keine Komponente)             |
 | `Expert.js`         | Parameterauswahl für Open-Meteo Expert-Modus (Accordions, Buttons)               |
 | `ExpertResults.js`  | Ergebnisdarstellung für Expert-Modus (Grid, Tabellen, Charts)                    |
 
@@ -323,5 +314,7 @@ GET /backend/proxy.php?api=forecast&lat=...&lon=...
 GET /backend/proxy.php?api=expert&lat=...&lon=...&current=...&daily=...&hourly=...
 ```
 
-- Standard-`api=forecast` ruft `current`, `hourly` und `daily` ab
+- Standard-`api=forecast` ruft `current`, `hourly` und `daily` ab, dazu
+  `forecast_days=8` — die Tagesleiste der Wetterkarte zeigt acht Tage, Open-Meteo
+  liefert per Default nur sieben
 - `api=expert` gibt die vom Nutzer gewählten Parameter frei

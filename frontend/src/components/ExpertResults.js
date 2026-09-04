@@ -13,25 +13,6 @@ export default {
       _charts: {},
       selectedDailyParams: [],
       selectedHourlyParams: [],
-      chartColors: [
-        "#667eea",
-        "#f093fb",
-        "#4facfe",
-        "#00f2fe",
-        "#43e97b",
-        "#fa709a",
-        "#feca57",
-        "#ff9ff3",
-        "#54a0ff",
-        "#48dbfb",
-        "#1dd1a1",
-        "#ee5a6f",
-        "#f8b500",
-        "#ff6348",
-        "#9b59b6",
-        "#3498db",
-        "#e74c3c",
-      ],
       parameterTranslations: {
         temperature_2m: "Temperatur (2m)",
         apparent_temperature: "Gefühlte Temperatur",
@@ -349,7 +330,11 @@ export default {
 
           const unit = this.getUnit(paramKey);
           const chartType = this.chartTab === "daily" ? "bar" : "line";
-          const chartColor = "#7c3aed";
+          // Farbe aus dem Design statt festem Lila — der Rest der App kennt
+          // kein Lila mehr, und im dunklen Modus wechselt der Ton mit.
+          const chartColor = getComputedStyle(document.body)
+            .getPropertyValue("--g-link")
+            .trim();
 
           const labels = dataSource.time.map((t, i) => {
             const date = new Date(t);
@@ -425,25 +410,25 @@ export default {
               scales: {
                 x: {
                   ticks: {
-                    color: this.darkMode ? "#e0e0e0" : "#333",
+                    color: this.darkMode ? "#9aa0a6" : "#5f6368",
                     autoSkip: this.chartTab === "daily",
                     maxTicksLimit: this.chartTab === "daily" ? 7 : undefined,
                     maxRotation: 0,
                     minRotation: 0,
                     callback: (value, index) => labels[index] || "",
                   },
-                  grid: { color: this.darkMode ? "#333" : "#eee" },
+                  grid: { color: this.darkMode ? "#3c4043" : "#dadce0" },
                 },
                 y: {
                   type: "linear",
                   display: true,
                   position: "left",
-                  ticks: { color: this.darkMode ? "#e0e0e0" : "#333" },
-                  grid: { color: this.darkMode ? "#333" : "#eee" },
+                  ticks: { color: this.darkMode ? "#9aa0a6" : "#5f6368" },
+                  grid: { color: this.darkMode ? "#3c4043" : "#dadce0" },
                   title: {
                     display: true,
                     text: unit || "Wert",
-                    color: this.darkMode ? "#e0e0e0" : "#333",
+                    color: this.darkMode ? "#9aa0a6" : "#5f6368",
                   },
                 },
               },
@@ -454,124 +439,110 @@ export default {
     },
   },
   template: `
-    <div :class="['text-sm', darkMode ? 'text-gray-300' : 'text-gray-900']">
-      <!-- Accordion: Aktuelle Werte -->
-      <div :class="['mb-6 p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
-        <div class="flex items-center cursor-pointer mb-4" @click="currentExpanded = !currentExpanded">
-          <h3 class="m-0 flex-1 text-lg font-semibold">Aktuelle Werte</h3>
-          <span :class="['text-lg transition-transform', currentExpanded ? 'rotate-0' : '-rotate-90']">▼</span>
-        </div>
-        <div v-show="currentExpanded">
-          <div v-if="data && data.current" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div>
+      <!-- Aktuelle Werte -->
+      <section class="g-section">
+        <button class="g-acc-head" @click="currentExpanded = !currentExpanded">
+          <span>Aktuelle Werte</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" :style="{ transform: currentExpanded ? 'rotate(180deg)' : 'none' }">
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
+        <div v-show="currentExpanded" class="g-acc-body">
+          <div v-if="data && data.current" class="g-tiles">
             <template v-for="(value, key) in data.current" :key="key">
-              <div v-if="key !== 'interval'" :class="['p-3 rounded', darkMode ? 'bg-slate-700' : 'bg-gray-50']">
-                <div :class="['text-xs opacity-70 mb-1', darkMode ? 'text-gray-400' : 'text-gray-600']">{{ getTranslation(key) }}</div>
-                <div class="text-base font-bold text-purple-600">{{ formatValue(value, key) }}<span v-if="getUnit(key) && key !== 'weather_code'" class="text-xs font-normal ml-0.5 opacity-80">{{ getUnit(key) }}</span></div>
+              <div v-if="key !== 'interval'" class="g-tile">
+                <h4>{{ getTranslation(key) }}</h4>
+                <div class="g-tile-value">{{ formatValue(value, key) }}<span v-if="getUnit(key) && key !== 'weather_code'" style="font-size:13px;margin-left:3px" class="g-muted">{{ getUnit(key) }}</span></div>
               </div>
             </template>
           </div>
         </div>
+      </section>
+
+      <!-- Tägliche | Stündliche -->
+      <div v-if="data" class="g-metrics" style="margin-bottom:20px">
+        <button class="g-metric" :class="{ 'is-active': chartTab === 'daily' }" @click="chartTab = 'daily'">Tägliche Vorhersage</button>
+        <button class="g-metric" :class="{ 'is-active': chartTab === 'hourly' }" @click="chartTab = 'hourly'">Stündliche Vorhersage</button>
       </div>
 
-      <!-- Tabs: Tägliche | Stündliche -->
-      <div v-if="data" class="mb-4 flex gap-2">
-        <button
-          :class="['px-4 py-2 rounded border-none cursor-pointer font-medium transition-colors', chartTab === 'daily' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
-          @click="chartTab = 'daily'"
-        >
-          Tägliche Vorhersage
-        </button>
-        <button
-          :class="['px-4 py-2 rounded border-none cursor-pointer font-medium transition-colors', chartTab === 'hourly' ? 'bg-purple-600 text-white' : (darkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-100 text-gray-900')]"
-          @click="chartTab = 'hourly'"
-        >
-          Stündliche Vorhersage
-        </button>
-      </div>
-
-      <!-- Charts Grid -->
-      <div v-if="data" :class="['mb-6 p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
-        <div v-if="currentSelectedParams.length === 0" :class="['text-center py-10', darkMode ? 'text-gray-600' : 'text-gray-400']">
+      <!-- Diagramme -->
+      <div v-if="data">
+        <div v-if="currentSelectedParams.length === 0" class="g-muted" style="padding:32px 0">
           Wähle mindestens einen Parameter aus, um die Grafiken anzuzeigen.
         </div>
-        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div v-for="(param, idx) in currentSelectedParams" :key="param" :class="['p-3 rounded', darkMode ? 'bg-slate-700' : 'bg-gray-50']">
-            <div class="text-sm font-semibold mb-2" :style="{ color: darkMode ? '#e0e0e0' : '#333' }">{{ getTranslation(param) }}</div>
-            <div class="h-48">
-              <canvas :data-param="param"></canvas>
-            </div>
+        <div v-else class="g-chartgrid">
+          <div v-for="param in currentSelectedParams" :key="param" class="g-tile">
+            <h4>{{ getTranslation(param) }}</h4>
+            <div style="height:190px"><canvas :data-param="param"></canvas></div>
           </div>
         </div>
       </div>
 
-      <!-- Accordion: Detail-Tabelle -->
-      <div :class="['p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
-        <div class="flex items-center cursor-pointer mb-4" @click="tableExpanded = !tableExpanded">
-          <h3 class="m-0 flex-1 text-lg font-semibold">Detail-Tabelle</h3>
-          <span :class="['text-lg transition-transform', tableExpanded ? 'rotate-0' : '-rotate-90']">▼</span>
-        </div>
-        <div v-show="tableExpanded">
-          <!-- Tägliche Tabelle -->
-          <div v-if="chartTab === 'daily' && data && data.daily && data.daily.time && data.daily.time.length > 0">
-            <h4 class="mt-0 text-base font-semibold mb-3">Tägliche Vorhersage</h4>
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse text-sm">
-                <thead>
-                  <tr :class="['border-b-2', darkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-100']">
-                    <th class="px-2 py-2 text-left font-bold">Datum</th>
-                    <th v-for="key in Object.keys(data.daily).filter(k => k !== 'time')" :key="key" class="px-2 py-2 text-right font-bold">{{ getTranslation(key) }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(date, index) in data.daily.time" :key="index" :class="['border-b', darkMode ? (index % 2 === 0 ? 'bg-slate-800 border-slate-700' : 'bg-slate-700 border-slate-700') : (index % 2 === 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200')]">
-                    <td class="px-2 py-2 text-left">{{ formatDate(date) }}</td>
-                    <td v-for="key in Object.keys(data.daily).filter(k => k !== 'time')" :key="key" class="px-2 py-2 text-right">{{ formatValue(data.daily[key][index], key) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+      <!-- Detail-Tabelle -->
+      <section class="g-section">
+        <button class="g-acc-head" @click="tableExpanded = !tableExpanded">
+          <span>Detail-Tabelle</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" :style="{ transform: tableExpanded ? 'rotate(180deg)' : 'none' }">
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
+        <div v-show="tableExpanded" class="g-acc-body">
+          <div v-if="chartTab === 'daily' && data && data.daily && data.daily.time && data.daily.time.length" style="overflow-x:auto">
+            <table class="g-table">
+              <thead>
+                <tr>
+                  <th>Datum</th>
+                  <th v-for="key in Object.keys(data.daily).filter(k => k !== 'time')" :key="key" style="text-align:right">{{ getTranslation(key) }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(date, index) in data.daily.time" :key="index">
+                  <td>{{ formatDate(date) }}</td>
+                  <td v-for="key in Object.keys(data.daily).filter(k => k !== 'time')" :key="key" style="text-align:right">{{ formatValue(data.daily[key][index], key) }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
 
-          <!-- Stündliche Tabelle (48h) -->
-          <div v-if="chartTab === 'hourly' && data && data.hourly && data.hourly.time && data.hourly.time.length > 0" class="mt-6">
-            <h4 class="mt-0 text-base font-semibold mb-3">Stündliche Details (nächste 48h)</h4>
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse text-xs">
-                <thead>
-                  <tr :class="['border-b-2', darkMode ? 'border-slate-600 bg-slate-700' : 'border-gray-300 bg-gray-100']">
-                    <th class="px-2 py-2 text-left font-bold">Zeit</th>
-                    <th v-for="key in Object.keys(data.hourly).filter(k => k !== 'time')" :key="key" class="px-2 py-2 text-right font-bold">{{ getTranslation(key) }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(time, index) in data.hourly.time.slice(0, 48)" :key="index" :class="['border-b', darkMode ? (index % 2 === 0 ? 'bg-slate-800 border-slate-700' : 'bg-slate-700 border-slate-700') : (index % 2 === 0 ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-200')]">
-                    <td class="px-2 py-2 text-left font-semibold">{{ formatTime(time) }}</td>
-                    <td v-for="key in Object.keys(data.hourly).filter(k => k !== 'time')" :key="key" class="px-2 py-2 text-right">{{ formatValue(data.hourly[key][index], key) }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          <div v-if="chartTab === 'hourly' && data && data.hourly && data.hourly.time && data.hourly.time.length" style="overflow-x:auto">
+            <p class="g-sub">Nächste 48 Stunden</p>
+            <table class="g-table">
+              <thead>
+                <tr>
+                  <th>Zeit</th>
+                  <th v-for="key in Object.keys(data.hourly).filter(k => k !== 'time')" :key="key" style="text-align:right">{{ getTranslation(key) }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(time, index) in data.hourly.time.slice(0, 48)" :key="index">
+                  <td>{{ formatTime(time) }}</td>
+                  <td v-for="key in Object.keys(data.hourly).filter(k => k !== 'time')" :key="key" style="text-align:right">{{ formatValue(data.hourly[key][index], key) }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Accordion: API Call -->
-      <div :class="['mt-6 p-4 rounded-lg', darkMode ? 'bg-slate-800' : 'bg-white']">
-        <div class="flex items-center cursor-pointer mb-4" @click="apiCallExpanded = !apiCallExpanded">
-          <h3 class="m-0 flex-1 text-lg font-semibold">API Call</h3>
-          <span :class="['text-lg transition-transform', apiCallExpanded ? 'rotate-0' : '-rotate-90']">▼</span>
+      <!-- API Call -->
+      <section class="g-section">
+        <button class="g-acc-head" @click="apiCallExpanded = !apiCallExpanded">
+          <span>API-Aufruf</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" :style="{ transform: apiCallExpanded ? 'rotate(180deg)' : 'none' }">
+            <path d="m6 9 6 6 6-6"></path>
+          </svg>
+        </button>
+        <div v-show="apiCallExpanded" class="g-acc-body">
+          <h4 class="g-label">URL</h4>
+          <div class="g-code" style="word-break:break-all">{{ apiUrl || 'Keine URL verfügbar' }}</div>
+          <h4 class="g-label" style="margin-top:16px">JSON-Ergebnis</h4>
+          <pre class="g-code">{{ formatJson(data) }}</pre>
         </div>
-        <div v-show="apiCallExpanded" class="space-y-4">
-          <div>
-            <div :class="['text-xs opacity-70 mb-1', darkMode ? 'text-gray-400' : 'text-gray-600']">URL</div>
-            <div :class="['text-xs break-all p-3 rounded', darkMode ? 'bg-slate-700 text-gray-200' : 'bg-gray-50 text-gray-800']">{{ apiUrl || 'Keine URL verfügbar' }}</div>
-          </div>
-          <div>
-            <div :class="['text-xs opacity-70 mb-1', darkMode ? 'text-gray-400' : 'text-gray-600']">JSON Ergebnis</div>
-            <pre :class="['text-xs p-3 rounded overflow-x-auto whitespace-pre-wrap', darkMode ? 'bg-slate-700 text-gray-200' : 'bg-gray-50 text-gray-800']">{{ formatJson(data) }}</pre>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   `,
 };

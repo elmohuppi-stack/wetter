@@ -7,9 +7,7 @@ export default {
   emits: ["refresh-expert-data"],
   data() {
     return {
-      expandedCurrent: false,
-      expandedDaily: false,
-      expandedHourly: false,
+      expanded: { current: false, daily: false, hourly: false },
       parameterTranslations: {
         current: "Aktuelle",
         daily: "Tägliche",
@@ -44,9 +42,6 @@ export default {
         rain: "Regen",
         visibility: "Sichtweite",
       },
-      expandedCurrent: false,
-      expandedDaily: false,
-      expandedHourly: false,
       currentParameters: {
         temperature_2m: true,
         apparent_temperature: true,
@@ -93,12 +88,29 @@ export default {
       },
     };
   },
+  computed: {
+    // Die drei Blöcke unterscheiden sich nur in ihrer Parameterliste — einmal
+    // beschrieben statt dreimal kopiert wie vorher.
+    groups() {
+      return [
+        { key: "current", model: this.currentParameters },
+        { key: "daily", model: this.dailyParameters },
+        { key: "hourly", model: this.hourlyParameters },
+      ];
+    },
+  },
   mounted() {
     this.handleRefresh();
   },
   methods: {
     getTranslation(key) {
       return this.parameterTranslations[key] || key;
+    },
+    toggle(key) {
+      this.expanded[key] = !this.expanded[key];
+    },
+    countSelected(model) {
+      return Object.values(model).filter(Boolean).length;
     },
     handleRefresh() {
       const selectedParameters = {
@@ -112,72 +124,35 @@ export default {
           (key) => this.hourlyParameters[key],
         ),
       };
-      this.expandedCurrent = false;
-      this.expandedDaily = false;
-      this.expandedHourly = false;
+      this.expanded = { current: false, daily: false, hourly: false };
       this.$emit("refresh-expert-data", selectedParameters);
     },
   },
   template: `
-    <div style="padding: 0">
-      <!-- Header and Info Row -->
-      <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 24px">
-        <h2 class="mt-6 text-2xl font-bold" :style="{ marginBottom: '0', color: darkMode ? '#e0e0e0' : '#333', whiteSpace: 'nowrap' }">Open Meteo Forecast API Daten{{ location ? ' für ' + location : '' }}</h2>
-        <!-- Action Buttons -->
-        <div style="display: flex; flex-direction: row; gap: 8px; align-self: flex-start; flex-shrink: 0; margin-left: auto; margin-top: 16px">
-          <button @click="handleRefresh" :disabled="isLoading"
-            style="padding: 8px 12px; border: none; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; font-weight: 600; cursor: pointer; font-size: 12px; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); white-space: nowrap"
-            @mouseenter="e => { if (!isLoading) { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)' } }"
-            @mouseleave="e => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)' }">
-            {{ isLoading ? 'Lädt...' : 'Start' }}
-          </button>
-        </div>
+    <div>
+      <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap">
+        <h3 class="g-h">Open-Meteo Forecast API{{ location ? ' — ' + location : '' }}</h3>
+        <button class="g-btn g-btn-primary" style="margin-left:auto" @click="handleRefresh" :disabled="isLoading">
+          {{ isLoading ? 'Lädt…' : 'Abfragen' }}
+        </button>
       </div>
-      
-      <!-- Accordions Row -->
-      <div style="display: flex; gap: 16px">
-        <!-- Accordions Container (3 columns, responsive) -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; flex: 1; minWidth: 0">
-          <!-- Current Parameters Accordion -->
-          <div style="border-radius: 8px; overflow: hidden" :style="{ background: darkMode ? '#2a2a2a' : '#f5f5f5' }">
-            <div @click="expandedCurrent = !expandedCurrent" :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', padding: '16px', borderRadius: expandedCurrent ? '8px 8px 0 0' : '8px', background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))', border: '1px solid rgba(102, 126, 234, 0.2)', transition: 'all 0.2s ease', color: darkMode ? '#e0e0e0' : '#333' }">
-              <span style="font-weight: 600; font-size: 16px">📊 {{ getTranslation('current') }} ({{ Object.values(currentParameters).filter(v => v).length }})</span>
-              <span style="font-size: 20px; transition: transform 0.3s ease" :style="{ transform: expandedCurrent ? 'rotateZ(180deg)' : 'rotateZ(0deg)' }">▼</span>
-            </div>
-            <div v-if="expandedCurrent" :style="{ background: darkMode ? '#1a1a1a' : '#fff', borderTop: '1px solid ' + (darkMode ? '#555' : '#e0e0e0'), display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', maxHeight: '400px', overflowY: 'auto' }">
-              <label v-for="(value, key) in currentParameters" :key="'current-' + key" :style="{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', color: darkMode ? '#e0e0e0' : '#333', fontSize: '12px' }">
-                <input type="checkbox" v-model="currentParameters[key]" style="width: 16px; height: 16px; cursor: pointer; accentColor: #667eea; flexShrink: 0" />
-                <span>{{ getTranslation(key) }}</span>
-              </label>
-            </div>
-          </div>
+      <p class="g-sub">Parameter auswählen und die Rohantwort der API ansehen.</p>
 
-          <!-- Daily Parameters Accordion -->
-          <div style="border-radius: 8px; overflow: hidden" :style="{ background: darkMode ? '#2a2a2a' : '#f5f5f5' }">
-            <div @click="expandedDaily = !expandedDaily" :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', padding: '16px', borderRadius: expandedDaily ? '8px 8px 0 0' : '8px', background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))', border: '1px solid rgba(102, 126, 234, 0.2)', transition: 'all 0.2s ease', color: darkMode ? '#e0e0e0' : '#333' }">
-              <span style="font-weight: 600; font-size: 16px">📅 {{ getTranslation('daily') }} ({{ Object.values(dailyParameters).filter(v => v).length }})</span>
-              <span style="font-size: 20px; transition: transform 0.3s ease" :style="{ transform: expandedDaily ? 'rotateZ(180deg)' : 'rotateZ(0deg)' }">▼</span>
-            </div>
-            <div v-if="expandedDaily" :style="{ background: darkMode ? '#1a1a1a' : '#fff', borderTop: '1px solid ' + (darkMode ? '#555' : '#e0e0e0'), display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', maxHeight: '400px', overflowY: 'auto' }">
-              <label v-for="(value, key) in dailyParameters" :key="'daily-' + key" :style="{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', color: darkMode ? '#e0e0e0' : '#333', fontSize: '12px' }">
-                <input type="checkbox" v-model="dailyParameters[key]" style="width: 16px; height: 16px; cursor: pointer; accentColor: #667eea; flexShrink: 0" />
-                <span>{{ getTranslation(key) }}</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Hourly Parameters Accordion -->
-          <div style="border-radius: 8px; overflow: hidden" :style="{ background: darkMode ? '#2a2a2a' : '#f5f5f5' }">
-            <div @click="expandedHourly = !expandedHourly" :style="{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none', padding: '16px', borderRadius: expandedHourly ? '8px 8px 0 0' : '8px', background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.05))', border: '1px solid rgba(102, 126, 234, 0.2)', transition: 'all 0.2s ease', color: darkMode ? '#e0e0e0' : '#333' }">
-              <span style="font-weight: 600; font-size: 16px">⏰ {{ getTranslation('hourly') }} ({{ Object.values(hourlyParameters).filter(v => v).length }})</span>
-              <span style="font-size: 20px; transition: transform 0.3s ease" :style="{ transform: expandedHourly ? 'rotateZ(180deg)' : 'rotateZ(0deg)' }">▼</span>
-            </div>
-            <div v-if="expandedHourly" :style="{ background: darkMode ? '#1a1a1a' : '#fff', borderTop: '1px solid ' + (darkMode ? '#555' : '#e0e0e0'), display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', maxHeight: '400px', overflowY: 'auto' }">
-              <label v-for="(value, key) in hourlyParameters" :key="'hourly-' + key" :style="{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', color: darkMode ? '#e0e0e0' : '#333', fontSize: '12px' }">
-                <input type="checkbox" v-model="hourlyParameters[key]" style="width: 16px; height: 16px; cursor: pointer; accentColor: #667eea; flexShrink: 0" />
-                <span>{{ getTranslation(key) }}</span>
-              </label>
-            </div>
+      <div class="g-accs">
+        <div class="g-acc" v-for="group in groups" :key="group.key">
+          <button class="g-acc-head" @click="toggle(group.key)">
+            <span>{{ getTranslation(group.key) }} ({{ countSelected(group.model) }})</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 :style="{ transform: expanded[group.key] ? 'rotate(180deg)' : 'none' }">
+              <path d="m6 9 6 6 6-6"></path>
+            </svg>
+          </button>
+          <div v-if="expanded[group.key]" class="g-acc-body">
+            <label v-for="(value, key) in group.model" :key="group.key + '-' + key" class="g-check">
+              <input type="checkbox" v-model="group.model[key]" />
+              <span>{{ getTranslation(key) }}</span>
+            </label>
           </div>
         </div>
       </div>

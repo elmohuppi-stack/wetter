@@ -9,6 +9,10 @@
       das erwähnte. Die Schrift kommt jetzt vom Gerät des Nutzers; die
       font-family-Angaben behalten Inter als ersten Wunsch und fallen sonst auf
       die Systemschrift zurück. Wer Inter zwingend will, hostet sie selbst.
+
+      Am 4. September 2026 hat die App das Google-Layout bekommen. Diese Seite
+      hatte ihre eigenen Farben und Schatten und wäre sonst als Fremdkörper
+      stehen geblieben; sie bedient sich jetzt aus demselben style.css.
     -->
     <link rel="stylesheet" href="/frontend/style.css" />
     <link
@@ -18,75 +22,63 @@
     />
     <title>Datenschutzerklärung — Wetter</title>
     <style>
-      body {
-        font-family: "Inter", system-ui, -apple-system, sans-serif;
-        margin: 0;
-        padding: 0;
-        color: #1a1a1a;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        min-height: 100vh;
+      /*
+        Nur der Textsatz, den die App selbst nicht braucht. Farben, Schrift und
+        Abstände kommen aus style.css, damit Rechtsseiten und App nicht
+        auseinanderlaufen.
+      */
+      .legal {
+        max-width: 720px;
+        padding: 40px 28px 48px;
+      }
+      .legal h1 {
+        margin: 0 0 24px;
+        font-size: 28px;
+        font-weight: 400;
+      }
+      .legal h2 {
+        margin: 32px 0 8px;
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .legal p,
+      .legal li {
+        margin: 8px 0;
+        color: var(--g-text-2);
         line-height: 1.6;
       }
-      .container {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 40px 24px;
+      .legal strong {
+        color: var(--g-text);
       }
-      .card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        padding: 32px;
-        border-radius: 16px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      }
-      h1 {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: #333;
-        border-bottom: 2px solid #667eea;
-        padding-bottom: 12px;
-        margin-top: 0;
-      }
-      h2 {
-        font-size: 1.2rem;
-        font-weight: 600;
-        color: #444;
-        margin-top: 28px;
-      }
-      p, li {
-        margin: 8px 0;
-        color: #555;
-      }
-      ul {
+      .legal ul {
         padding-left: 20px;
+        list-style: disc;
       }
-      a {
-        color: #667eea;
+      .legal a {
+        color: var(--g-link);
         text-decoration: none;
       }
-      a:hover {
+      .legal a:hover {
         text-decoration: underline;
       }
-      .back-link {
+      .legal .back-link {
         display: inline-block;
-        margin-top: 24px;
-        padding: 10px 20px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 8px;
+        margin-top: 32px;
+        height: 36px;
+        line-height: 36px;
+        padding: 0 16px;
+        border: 1px solid var(--g-border);
+        border-radius: 18px;
         font-weight: 500;
-        transition: opacity 0.2s;
       }
-      .back-link:hover {
-        opacity: 0.9;
+      .legal .back-link:hover {
+        background: var(--g-hover);
         text-decoration: none;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="card">
+    <div class="legal">
         <h1>Datenschutzerklärung</h1>
 
         <h2>1. Datenschutz auf einen Blick</h2>
@@ -183,13 +175,6 @@
           IP-Adresse Ihres Geräts an dessen Betreiber übermittelt.
         </p>
 
-        <p>
-          <strong>Leaflet</strong><br />
-          Für die Kartendarstellung wird die Bibliothek Leaflet verwendet. Sie wird über das
-          Content Delivery Network <strong>unpkg</strong> geladen; dabei wird die
-          IP-Adresse Ihres Geräts an dessen Betreiber übermittelt.
-        </p>
-
         <h2>5. Ihre Rechte</h2>
         <p>
           Sie haben jederzeit das Recht, unentgeltlich Auskunft über Herkunft, Empfänger und
@@ -210,7 +195,6 @@
         </p>
 
         <a href="/" class="back-link">← Zurück zur Wetter-App</a>
-      </div>
     </div>
   </body>
 </html>

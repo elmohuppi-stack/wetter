@@ -1,0 +1,400 @@
+import { weatherIcon, weatherLabel } from "../weatherCodes.js";
+
+/*
+  Die Wetterkarte im Google-Zuschnitt (4. September 2026).
+
+  Ersetzt CurrentWeather.js, HourlyTimeline.js, WeeklyList.js und MapPreview.js.
+  Aufbau von oben nach unten wie bei Google:
+
+    Ort · Region auswählen
+    Symbol  31 °C|°F   Niederschlag/Luftfeuchte/Wind      Wetter/Freitag/Sonnig
+    Temperatur | Niederschlag | Wind
+    Diagramm über acht Zeitpunkte
+    08:00  11:00  14:00 …
+    Fr. Sa. So. Mo. Di. Mi. Do. Fr.   (anklickbar)
+
+  Der Dreistundenraster ist Googles: die Zeitpunkte liegen auf 02, 05, 08, 11,
+  14, 17, 20, 23 Uhr. Für heute beginnt die Reihe beim nächsten Rasterpunkt und
+  läuft über Mitternacht hinaus — deshalb steht dort 08:00 … 05:00. Für jeden
+  anderen Tag zeigt sie den ganzen Tag von 02:00 bis 23:00.
+*/
+
+const GRID_OFFSET = 2; // Rasterstunden sind 2, 5, 8, … — Rest 2 bei Teilung durch 3
+const POINTS = 8;
+
+/*
+  Chart.js bringt keine Beschriftung an den Datenpunkten mit, und für ein
+  einziges Zahlenband lohnt kein weiteres Skript vom CDN. Das Plugin schreibt
+  die Werte direkt über die Punkte, so wie Googles Temperaturkurve.
+*/
+const pointLabels = {
+  id: "pointLabels",
+  afterDatasetsDraw(chart, args, opts) {
+    const meta = chart.getDatasetMeta(0);
+    if (!meta || !meta.data) return;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = '500 13px "Google Sans", Roboto, arial, sans-serif';
+    ctx.fillStyle = opts.color;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    meta.data.forEach((point, i) => {
+      const value = chart.data.datasets[0].data[i];
+      if (value === null || value === undefined) return;
+      ctx.fillText(opts.format(value), point.x, point.y - 8);
+    });
+    ctx.restore();
+  },
+};
+
+export default {
+  props: ["data", "location", "isCurrent", "darkMode"],
+  emits: ["open-location"],
+  data() {
+    return {
+      metric: "temperature",
+      unit: "C",
+      selectedDay: 0,
+      metrics: [
+        { id: "temperature", label: "Temperatur" },
+        { id: "precipitation", label: "Niederschlag" },
+        { id: "wind", label: "Wind" },
+      ],
+    };
+  },
+  computed: {
+    ready() {
+      return !!(this.data && !this.data.error && this.data.hourly && this.data.daily);
+    },
+    hourly() {
+      return (this.ready && this.data.hourly) || {};
+    },
+    daily() {
+      return (this.ready && this.data.daily) || {};
+    },
+    current() {
+      return (this.data && (this.data.current || this.data.current_weather)) || {};
+    },
+    days() {
+      const times = this.daily.time || [];
+      return times.map((t, i) => ({
+        date: t,
+        name: this.weekdayShort(t),
+        icon: weatherIcon((this.daily.weathercode || [])[i]),
+        hi: this.temp((this.daily.temperature_2m_max || [])[i]),
+        lo: this.temp((this.daily.temperature_2m_min || [])[i]),
+      }));
+    },
+    /* Positionen im Stundenarray, die auf dem Dreistundenraster liegen. */
+    gridIndexes() {
+      const times = this.hourly.time || [];
+      const grid = [];
+      for (let i = 0; i < times.length; i++) {
+        if (this.hourOf(times[i]) % 3 === GRID_OFFSET % 3) grid.push(i);
+      }
+      return grid;
+    },
+    /* Die acht Stundenindizes, die gerade gezeigt werden. */
+    slotIndexes() {
+      const grid = this.gridIndexes;
+      if (!grid.length) return [];
+      const times = this.hourly.time || [];
+      let startAt = 0;
+      if (this.selectedDay === 0) {
+        const now = this.current.time || times[0];
+        startAt = grid.findIndex((idx) => times[idx] >= now);
+        if (startAt < 0) startAt = 0;
+      } else {
+        const date = (this.daily.time || [])[this.selectedDay];
+        startAt = grid.findIndex((idx) => times[idx].startsWith(date));
+        if (startAt < 0) startAt = 0;
+      }
+      // Am Ende der Vorhersage reicht das Fenster nicht mehr — dann zurückrücken.
+      startAt = Math.min(startAt, Math.max(0, grid.length - POINTS));
+      return grid.slice(startAt, startAt + POINTS);
+    },
+    hourLabels() {
+      const times = this.hourly.time || [];
+      return this.slotIndexes.map((i) => times[i].slice(11, 16));
+    },
+    temperatures() {
+      return this.slotIndexes.map((i) =>
+        this.temp((this.hourly.temperature_2m || [])[i]),
+      );
+    },
+    precipProbabilities() {
+      return this.slotIndexes.map((i) =>
+        Math.round((this.hourly.precipitation_probability || [])[i] ?? 0),
+      );
+    },
+    winds() {
+      return this.slotIndexes.map((i) => ({
+        speed: Math.round((this.hourly.wind_speed_10m || [])[i] ?? 0),
+        direction: Math.round((this.hourly.wind_direction_10m || [])[i] ?? 0),
+      }));
+    },
+    /* Die Zahlen neben dem großen Symbol — heute aus Messwerten, sonst aus dem Tag. */
+    headline() {
+      if (!this.ready) return null;
+      const i = this.selectedDay;
+      if (i === 0) {
+        const nowIdx = this.nearestHourIndex;
+        return {
+          temp: this.temp(this.current.temperature_2m ?? this.current.temperature),
+          code: this.current.weather_code ?? this.current.weathercode,
+          precipitation: Math.round(
+            (this.hourly.precipitation_probability || [])[nowIdx] ?? 0,
+          ),
+          humidity: Math.round(this.current.relative_humidity_2m ?? 0),
+          wind: Math.round(this.current.wind_speed_10m ?? 0),
+        };
+      }
+      const dayIdxs = this.hourIndexesOfDay(i);
+      return {
+        temp: this.temp((this.daily.temperature_2m_max || [])[i]),
+        code: (this.daily.weathercode || [])[i],
+        precipitation: Math.round(
+          (this.daily.precipitation_probability_max || [])[i] ?? 0,
+        ),
+        humidity: this.meanOf(this.hourly.relative_humidity_2m, dayIdxs),
+        wind: this.meanOf(this.hourly.wind_speed_10m, dayIdxs),
+      };
+    },
+    /* Für nicht-heutige Tage sind die Werte Tagesmittel, das sagen wir auch. */
+    statsPrefix() {
+      return this.selectedDay === 0 ? "" : "Ø ";
+    },
+    nearestHourIndex() {
+      const times = this.hourly.time || [];
+      const now = this.current.time || times[0];
+      const idx = times.findIndex((t) => t >= now);
+      return idx < 0 ? 0 : idx;
+    },
+    weekdayLong() {
+      const date = (this.daily.time || [])[this.selectedDay];
+      if (!date) return "";
+      return new Date(date + "T00:00:00").toLocaleDateString("de-DE", {
+        weekday: "long",
+      });
+    },
+  },
+  methods: {
+    hourOf(timeStr) {
+      return parseInt(timeStr.slice(11, 13), 10);
+    },
+    hourIndexesOfDay(dayIndex) {
+      const date = (this.daily.time || [])[dayIndex];
+      const times = this.hourly.time || [];
+      const out = [];
+      for (let i = 0; i < times.length; i++) {
+        if (times[i].startsWith(date)) out.push(i);
+      }
+      return out;
+    },
+    meanOf(series, indexes) {
+      if (!series || !indexes.length) return 0;
+      const values = indexes.map((i) => series[i]).filter((v) => v != null);
+      if (!values.length) return 0;
+      return Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+    },
+    /* Rechnet °C in die gewählte Einheit um. Wind bleibt km/h, wie in der API. */
+    temp(celsius) {
+      if (celsius == null) return null;
+      return Math.round(this.unit === "F" ? celsius * 1.8 + 32 : celsius);
+    },
+    weekdayShort(dateStr) {
+      return new Date(dateStr + "T00:00:00").toLocaleDateString("de-DE", {
+        weekday: "short",
+      });
+    },
+    icon(code) {
+      return weatherIcon(code);
+    },
+    label(code) {
+      return weatherLabel(code);
+    },
+    setUnit(unit) {
+      this.unit = unit;
+      localStorage.setItem("tempUnit", unit);
+    },
+    renderChart() {
+      if (this.metric === "wind") {
+        this.destroyChart();
+        return;
+      }
+      const canvas = this.$refs.chart;
+      if (!canvas || !this.ready) return;
+      this.destroyChart();
+
+      const isTemperature = this.metric === "temperature";
+      const styles = getComputedStyle(document.body);
+      const line = styles
+        .getPropertyValue(isTemperature ? "--g-accent" : "--g-blue")
+        .trim();
+      const fill = styles
+        .getPropertyValue(isTemperature ? "--g-accent-fill" : "--g-blue-fill")
+        .trim();
+      const values = isTemperature ? this.temperatures : this.precipProbabilities;
+
+      this._chart = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data: {
+          labels: this.hourLabels,
+          datasets: [
+            {
+              data: values,
+              borderColor: line,
+              backgroundColor: fill,
+              borderWidth: 2,
+              fill: true,
+              pointRadius: 0,
+              // Die Temperaturkurve ist bei Google weich, der Niederschlag
+              // eine Treppe — jeder Balken gilt für seine drei Stunden.
+              tension: isTemperature ? 0.4 : 0,
+              stepped: isTemperature ? false : "middle",
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          // Platz oben für die Zahlen, die das Plugin über die Punkte schreibt.
+          layout: { padding: { top: isTemperature ? 26 : 2, bottom: 2 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false },
+            // Nur die Temperaturkurve trägt ihre Zahlen an den Punkten. Beim
+            // Niederschlag stehen sie wie bei Google in einer festen Zeile
+            // darüber — an der Nullinie klebten sie sonst auf der Achse.
+            pointLabels: isTemperature
+              ? { color: line, format: (v) => String(v) }
+              : false,
+          },
+          scales: {
+            x: { display: false, offset: true },
+            y: {
+              display: false,
+              // Niederschlag immer gegen die volle Skala, sonst sehen 2 %
+              // aus wie Dauerregen.
+              min: isTemperature ? undefined : 0,
+              max: isTemperature ? undefined : 100,
+              grace: isTemperature ? "25%" : undefined,
+            },
+          },
+        },
+        plugins: [pointLabels],
+      });
+    },
+    destroyChart() {
+      if (this._chart) {
+        this._chart.destroy();
+        this._chart = null;
+      }
+    },
+    scheduleRender() {
+      this.$nextTick(() => this.renderChart());
+    },
+  },
+  mounted() {
+    const saved = localStorage.getItem("tempUnit");
+    if (saved === "F" || saved === "C") this.unit = saved;
+    this.scheduleRender();
+  },
+  beforeUnmount() {
+    this.destroyChart();
+  },
+  watch: {
+    data: "scheduleRender",
+    metric: "scheduleRender",
+    selectedDay: "scheduleRender",
+    unit: "scheduleRender",
+    darkMode: "scheduleRender",
+  },
+  template: `
+    <div class="g-weather" v-if="ready">
+      <div class="g-loc">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="10" r="3"></circle>
+          <path d="M19.4 13a8 8 0 10-14.8 0L12 21z"></path>
+        </svg>
+        <strong>{{ location || 'Standort' }}</strong>
+        <span>·</span>
+        <button @click="$emit('open-location')">Region auswählen</button>
+      </div>
+
+      <div class="g-top">
+        <div class="g-top-left">
+          <span class="g-bigicon">{{ icon(headline.code) }}</span>
+          <span class="g-temp">{{ headline.temp }}</span>
+          <span class="g-units">
+            <button :class="{ 'is-active': unit === 'C' }" @click="setUnit('C')">°C</button>
+            <span>|</span>
+            <button :class="{ 'is-active': unit === 'F' }" @click="setUnit('F')">°F</button>
+          </span>
+          <div class="g-stats">
+            <div>Niederschlag: {{ headline.precipitation }}%</div>
+            <div>Luftfeuchte: {{ statsPrefix }}{{ headline.humidity }}%</div>
+            <div>Wind: {{ statsPrefix }}{{ headline.wind }} km/h</div>
+          </div>
+        </div>
+        <div class="g-cond">
+          <div class="g-cond-title">Wetter</div>
+          <div>{{ weekdayLong }}</div>
+          <div>{{ label(headline.code) }}</div>
+        </div>
+      </div>
+
+      <div class="g-metrics">
+        <button
+          v-for="m in metrics"
+          :key="m.id"
+          class="g-metric"
+          :class="{ 'is-active': metric === m.id }"
+          @click="metric = m.id"
+        >{{ m.label }}</button>
+      </div>
+
+      <div v-if="metric === 'precipitation'" class="g-grid8 g-values">
+        <div v-for="(p, i) in precipProbabilities" :key="i">{{ p }}%</div>
+      </div>
+      <div v-if="metric !== 'wind'" class="g-chartwrap" :class="{ 'is-short': metric === 'precipitation' }">
+        <canvas ref="chart"></canvas>
+      </div>
+      <div v-else class="g-grid8 g-windrow">
+        <div v-for="(w, i) in winds" :key="i">
+          <div class="g-windspeed">{{ w.speed }} km/h</div>
+          <svg class="g-arrow" width="26" height="26" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"
+               :style="{ transform: 'rotate(' + (w.direction + 180) + 'deg)' }">
+            <path d="M12 20V4"></path>
+            <path d="m6 10 6-6 6 6"></path>
+          </svg>
+        </div>
+      </div>
+
+      <div class="g-grid8 g-hours">
+        <div v-for="h in hourLabels" :key="h">{{ h }}</div>
+      </div>
+
+      <div class="g-days">
+        <button
+          v-for="(d, i) in days"
+          :key="d.date"
+          class="g-day"
+          :class="{ 'is-active': selectedDay === i }"
+          @click="selectedDay = i"
+        >
+          <div class="g-day-name">{{ d.name }}</div>
+          <div class="g-day-icon">{{ d.icon }}</div>
+          <div class="g-day-temp"><span class="hi">{{ d.hi }}°</span> {{ d.lo }}°</div>
+        </button>
+      </div>
+
+      <div class="g-cardfoot">
+        <a href="https://open-meteo.com/" target="_blank" rel="noopener">Wetterdaten</a>
+      </div>
+    </div>
+    <div v-else-if="data && data.error" class="g-error">{{ data.message }}</div>
+  `,
+};
