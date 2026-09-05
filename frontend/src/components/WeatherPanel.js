@@ -8,9 +8,9 @@ import { weatherIcon, weatherLabel } from "../weatherCodes.js";
 
     Ort · Region auswählen
     Symbol  31 °C|°F   Niederschlag/Luftfeuchte/Wind      Wetter/Freitag/Sonnig
-    Temperatur | Niederschlag | Wind
-    Diagramm über acht Zeitpunkte
-    08:00  11:00  14:00 …
+    Temperatur | Niederschlag | Wind | Wochentemperatur
+    Diagramm über acht Zeitpunkte (in der Wochenansicht über alle Tage)
+    08:00  11:00  14:00 …  bzw.  Fr. Sa. So. …
     Fr. Sa. So. Mo. Di. Mi. Do. Fr.   (anklickbar)
 
   Der Dreistundenraster ist Googles: die Zeitpunkte liegen auf 02, 05, 08, 11,
@@ -29,19 +29,23 @@ const POINTS = 8;
 */
 const pointLabels = {
   id: "pointLabels",
-  afterDatasetsDraw(chart, args, opts) {
-    const meta = chart.getDatasetMeta(0);
-    if (!meta || !meta.data) return;
+  afterDatasetsDraw(chart) {
     const ctx = chart.ctx;
     ctx.save();
     ctx.font = '500 13px "Google Sans", Roboto, arial, sans-serif';
-    ctx.fillStyle = opts.color;
     ctx.textAlign = "center";
-    ctx.textBaseline = "bottom";
-    meta.data.forEach((point, i) => {
-      const value = chart.data.datasets[0].data[i];
-      if (value === null || value === undefined) return;
-      ctx.fillText(opts.format(value), point.x, point.y - 8);
+    chart.data.datasets.forEach((dataset, di) => {
+      if (!dataset.pointLabel) return;
+      const meta = chart.getDatasetMeta(di);
+      if (!meta || !meta.data) return;
+      const below = dataset.pointLabelBelow === true;
+      ctx.fillStyle = dataset.pointLabelColor || dataset.borderColor;
+      ctx.textBaseline = below ? "top" : "bottom";
+      meta.data.forEach((point, i) => {
+        const value = dataset.data[i];
+        if (value === null || value === undefined) return;
+        ctx.fillText(String(value), point.x, point.y + (below ? 8 : -8));
+      });
     });
     ctx.restore();
   },
@@ -59,6 +63,7 @@ export default {
         { id: "temperature", label: "Temperatur" },
         { id: "precipitation", label: "Niederschlag" },
         { id: "wind", label: "Wind" },
+        { id: "week", label: "Wochentemperatur" },
       ],
     };
   },
@@ -84,6 +89,28 @@ export default {
         hi: this.temp((this.daily.temperature_2m_max || [])[i]),
         lo: this.temp((this.daily.temperature_2m_min || [])[i]),
       }));
+    },
+    /*
+      Die Wochenansicht zeigt nicht acht Stunden, sondern alle Vorhersagetage
+      mit ihrem Höchst- und Tiefstwert — zwei Kurven statt einer.
+    */
+    isWeek() {
+      return this.metric === "week";
+    },
+    weekHighs() {
+      return this.days.map((d) => d.hi);
+    },
+    weekLows() {
+      return this.days.map((d) => d.lo);
+    },
+    /* Die Beschriftung unter dem Diagramm: Stunden, in der Woche Wochentage. */
+    axisLabels() {
+      return this.isWeek ? this.days.map((d) => d.name) : this.hourLabels;
+    },
+    /* Acht Stunden oder so viele Tage, wie die Vorhersage hergibt. */
+    axisStyle() {
+      const n = this.axisLabels.length || POINTS;
+      return { gridTemplateColumns: `repeat(${n}, 1fr)` };
     },
     /* Positionen im Stundenarray, die auf dem Dreistundenraster liegen. */
     gridIndexes() {
@@ -226,21 +253,49 @@ export default {
       if (!canvas || !this.ready) return;
       this.destroyChart();
 
-      const isTemperature = this.metric === "temperature";
+      const isWeek = this.isWeek;
+      const isTemperature = this.metric === "temperature" || isWeek;
       const styles = getComputedStyle(document.body);
-      const line = styles
-        .getPropertyValue(isTemperature ? "--g-accent" : "--g-blue")
-        .trim();
-      const fill = styles
-        .getPropertyValue(isTemperature ? "--g-accent-fill" : "--g-blue-fill")
-        .trim();
+      const prop = (name) => styles.getPropertyValue(name).trim();
+      const line = prop(isTemperature ? "--g-accent" : "--g-blue");
+      const fill = prop(isTemperature ? "--g-accent-fill" : "--g-blue-fill");
+      const cool = prop("--g-blue");
       const values = isTemperature ? this.temperatures : this.precipProbabilities;
+
+      // In der Woche liegen zwei Kurven übereinander: oben die Höchst-, unten
+      // die Tiefstwerte. Die Fläche dazwischen füllt die obere Kurve.
+      const weekDatasets = [
+        {
+          data: this.weekHighs,
+          borderColor: line,
+          backgroundColor: fill,
+          borderWidth: 2,
+          fill: 1,
+          pointRadius: 3,
+          pointBackgroundColor: line,
+          pointBorderWidth: 0,
+          tension: 0.35,
+          pointLabel: true,
+        },
+        {
+          data: this.weekLows,
+          borderColor: cool,
+          borderWidth: 2,
+          fill: false,
+          pointRadius: 3,
+          pointBackgroundColor: cool,
+          pointBorderWidth: 0,
+          tension: 0.35,
+          pointLabel: true,
+          pointLabelBelow: true,
+        },
+      ];
 
       this._chart = new Chart(canvas.getContext("2d"), {
         type: "line",
         data: {
-          labels: this.hourLabels,
-          datasets: [
+          labels: this.axisLabels,
+          datasets: isWeek ? weekDatasets : [
             {
               data: values,
               borderColor: line,
@@ -252,6 +307,8 @@ export default {
               // eine Treppe — jeder Balken gilt für seine drei Stunden.
               tension: isTemperature ? 0.4 : 0,
               stepped: isTemperature ? false : "middle",
+              pointLabel: isTemperature,
+              pointLabelColor: line,
             },
           ],
         },
@@ -260,16 +317,16 @@ export default {
           maintainAspectRatio: false,
           animation: false,
           // Platz oben für die Zahlen, die das Plugin über die Punkte schreibt.
-          layout: { padding: { top: isTemperature ? 26 : 2, bottom: 2 } },
+          layout: {
+            padding: {
+              top: isTemperature ? 26 : 2,
+              // Die Tiefstwerte stehen unter ihrer Kurve und brauchen Luft.
+              bottom: isWeek ? 24 : 2,
+            },
+          },
           plugins: {
             legend: { display: false },
             tooltip: { enabled: false },
-            // Nur die Temperaturkurve trägt ihre Zahlen an den Punkten. Beim
-            // Niederschlag stehen sie wie bei Google in einer festen Zeile
-            // darüber — an der Nullinie klebten sie sonst auf der Achse.
-            pointLabels: isTemperature
-              ? { color: line, format: (v) => String(v) }
-              : false,
           },
           scales: {
             x: { display: false, offset: true },
@@ -279,7 +336,7 @@ export default {
               // aus wie Dauerregen.
               min: isTemperature ? undefined : 0,
               max: isTemperature ? undefined : 100,
-              grace: isTemperature ? "25%" : undefined,
+              grace: isWeek ? "18%" : isTemperature ? "25%" : undefined,
             },
           },
         },
@@ -358,6 +415,10 @@ export default {
       <div v-if="metric === 'precipitation'" class="g-grid8 g-values">
         <div v-for="(p, i) in precipProbabilities" :key="i">{{ p }}%</div>
       </div>
+      <div v-if="isWeek" class="g-legend">
+        <span class="g-legend-hi">Höchstwert</span>
+        <span class="g-legend-lo">Tiefstwert</span>
+      </div>
       <div v-if="metric !== 'wind'" class="g-chartwrap" :class="{ 'is-short': metric === 'precipitation' }">
         <canvas ref="chart"></canvas>
       </div>
@@ -373,8 +434,8 @@ export default {
         </div>
       </div>
 
-      <div class="g-grid8 g-hours">
-        <div v-for="h in hourLabels" :key="h">{{ h }}</div>
+      <div class="g-grid8 g-hours" :style="axisStyle">
+        <div v-for="(l, i) in axisLabels" :key="i">{{ l }}</div>
       </div>
 
       <div class="g-days">
@@ -387,7 +448,7 @@ export default {
         >
           <div class="g-day-name">{{ d.name }}</div>
           <div class="g-day-icon">{{ d.icon }}</div>
-          <div class="g-day-temp"><span class="hi">{{ d.hi }}°</span> {{ d.lo }}°</div>
+          <div class="g-day-temp"><span class="hi">{{ d.hi }}°</span><span class="lo">{{ d.lo }}°</span></div>
         </button>
       </div>
 

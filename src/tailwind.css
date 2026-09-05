@@ -384,6 +384,50 @@ body {
   display: flex;
   align-items: center;
   margin: 22px 0 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.g-metrics::-webkit-scrollbar {
+  display: none;
+}
+
+.g-metric {
+  white-space: nowrap;
+}
+
+/* Legende der Wochenansicht — zwei Kurven brauchen eine Zuordnung. */
+.g-legend {
+  display: flex;
+  gap: 18px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.g-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.g-legend-hi {
+  color: var(--g-text-2);
+}
+
+.g-legend-hi::before {
+  background: var(--g-accent);
+}
+
+.g-legend-lo {
+  color: var(--g-text-2);
+}
+
+.g-legend-lo::before {
+  background: var(--g-blue);
 }
 
 .g-metric {
@@ -513,12 +557,23 @@ body {
   line-height: 1.5;
 }
 
+/*
+  Höchst- und Tiefstwert stehen nebeneinander in einer schmalen Spalte. Ohne
+  nowrap rutschte der Tiefstwert in eine zweite Zeile und die Kachel wurde
+  höher als ihre Nachbarn.
+*/
 .g-day-temp {
   font-size: 13px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 .g-day-temp .hi {
   color: var(--g-text);
+}
+
+.g-day-temp .lo {
+  margin-left: 5px;
 }
 
 /* ---------- Fußzeile ---------- */
