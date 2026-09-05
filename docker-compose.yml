@@ -1,12 +1,16 @@
-version: "3.8"
-
+# /var/www/wetter/docker-compose.yml — Skelett aus platform/ARCHITEKTUR.md 6.
+#
+# Der Service heisst nicht "app". Compose setzt den Service-Namen in jedem Netz
+# als Alias; im geteilten apps-net trugen am 8. August vier Container den Alias
+# "app" - Docker-DNS lieferte sie im Wechsel, und knoras Frontend proxyte seine
+# API-Calls reihum an fremde Anwendungen. container_name bleibt wetter-app.
+#
+# wetter hängt seit dem 5. September nicht mehr im apps-net. Es braucht
+# pg-shared nicht - die Daten kommen von Open-Meteo, der Zustand liegt in
+# Dateien -, und ein Dienst im geteilten Netz löst Nachbarnamen auf, die ihn
+# nichts angehen, und erbt jede künftige Kollision (ARCHITEKTUR 11). Erreichbar
+# ist die App unverändert über den Host-nginx auf 127.0.0.1:3031.
 services:
-  # Der Service heisst nicht "app". Compose setzt den Service-Namen in jedem
-  # Netz als Alias, und das Default-Netz ist hier das geteilte apps-net.
-  # Dort trugen am 8. August vier Container gleichzeitig den Alias "app" -
-  # Docker-DNS lieferte sie im Wechsel, und knoras Frontend proxyte seine
-  # API-Calls reihum an fremde Anwendungen. Im geteilten Netz muss der
-  # Servicename app-weit eindeutig sein; container_name bleibt wetter-app.
   wetter:
     build:
       context: .
@@ -21,8 +25,14 @@ services:
       - .:/app
     working_dir: /app
     command: php -S 0.0.0.0:8000 -t . index.php
-
-networks:
-  default:
-    name: apps-net
-    external: true
+    # Gegen die eigene App, nicht geerbt: der PHP-Built-in-Server antwortet auf
+    # / mit dem Frontend. Fällt er aus, ohne dass der Container stirbt, sieht
+    # man das sonst erst am 502 im Browser.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/ > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    # Deckel ist Pflicht: ohne ihn wählt der OOM-Killer sein Opfer selbst.
+    mem_limit: 256m

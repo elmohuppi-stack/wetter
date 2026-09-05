@@ -1,213 +1,96 @@
-# Wetter-App Deployment auf Hetzner
+# Deployment der Wetter-App
 
-Deployment-Konfiguration für die Wetter-App auf dem zentralen Hetzner-Multi-App-Server.
+Die App läuft auf **nuernberg-16gb bei netcup**, zusammen mit zwölf anderen. Der
+gemeinsame Unterbau — Server, nginx, Zertifikate, Sicherungen, Regeln — ist im
+Repo `platform` beschrieben und wird hier **nicht wiederholt**, sondern verlinkt:
 
-## Konfiguration
+- `platform/DEPLOYMENT.md` — Nachschlagewerk pro App, Prüfschritte, Störungen
+- `platform/ARCHITEKTUR.md` — warum die Regeln gelten, Compose-Skelett, Anti-Patterns
+- `platform/NEUE-APP.md` — der Weg von der Idee bis zur Live-Schaltung
 
-| Variable           | Wert                  |
-| ------------------ | --------------------- |
-| `APP_SLUG`         | `wetter`              |
-| `FRONTEND_DOMAIN`  | `wetter.elmarhepp.de` |
-| `WEB_PORT`         | `3031`                |
-| `DEPLOY_PATH`      | `/var/www/wetter`     |
-| `Docker Container` | `wetter-app`          |
+Was hier steht, ist das, was nur wetter betrifft.
+
+## Eckdaten
+
+| Was                | Wert                                        |
+| ------------------ | ------------------------------------------- |
+| Domain             | `wetter.elmarhepp.de`                       |
+| Port               | `3031` (nur `127.0.0.1`)                    |
+| Verzeichnis        | `/var/www/wetter`                           |
+| Container          | `wetter-app` (Compose-Service `wetter`)     |
+| Branch             | `main`                                      |
+| Persistenz         | Dateien im Arbeitsverzeichnis (Cache, Zähler) |
+| Datenbank          | keine — **nicht** an `pg-shared`            |
 
 ## Stack
 
-- **PHP**: 8.2 CLI mit Built-in Server
-- **Frontend**: Vue.js 3 (CDN) + Tailwind CSS (generiert)
-- **Backend**: PHP 8+ Proxy mit Rate Limiting & Caching
-- **Reverse Proxy**: Nginx (Host)
-- **HTTPS**: Let's Encrypt / Certbot
+- **PHP 8.2 CLI** mit Built-in Server, Router `index.php`
+- **Frontend**: Vue 3 und Chart.js vom CDN, Tailwind-CSS im Repo gebaut
+- **Backend**: `backend/proxy.php` — Open-Meteo-Proxy mit Rate-Limiting und Cache
+- **Reverse Proxy**: Host-nginx, TLS über certbot
 
-## Automatisches Deployment
+Das Frontend wird **nicht** im Container gebaut. Der Container bindet das
+Arbeitsverzeichnis ein (`.:/app`) und PHP liefert die Dateien direkt aus — ein
+`git pull` genügt für Frontend-Änderungen. Neu gebaut werden muss nur, wenn sich
+`Dockerfile` oder `docker-compose.yml` ändern.
 
-```bash
-# Auf dem Hetzner-Server ausführen:
-ssh elmarhepp "cd /var/www/wetter && bash deploy-hetzner.sh"
+**Ausnahme, die man leicht übersieht:** `frontend/style.css` ist ein Build-Ergebnis
+von Tailwind und liegt im Repo. Wer `src/tailwind.css` ändert, baut lokal mit
+`make build` und committet das Ergebnis mit — auf dem Server läuft kein npm.
+
+## Deploy
+
+```sh
+ssh elmarhepp 'cd /var/www/wetter && ./deploy.sh'
 ```
 
-Oder manuell (wichtig: 2-Schritt Prozess für SSL!):
+Das Skript zieht `git pull origin main`, legt bei Bedarf `.env.production` an,
+baut und startet den Container und prüft am Ende, ob die Seite antwortet.
 
-```bash
-# 1. Repository klonen
-cd /var/www
-git clone https://github.com/elmohuppi-stack/wetter.git wetter
-cd wetter
+> **Es hieß bis zum 5. September 2026 `deploy-hetzner.sh`.** Der Name nannte einen
+> Anbieter, den es hier seit dem Umzug am 15. August nicht mehr gibt. Wer auf einem
+> alten Server-Stand steht, ruft einmalig noch den alten Namen auf; danach ist die
+> Datei umbenannt.
 
-# 2. .env vorbereiten
-cat > .env.production << EOF
-APP_DOMAIN=wetter.elmarhepp.de
-WEB_PORT=3031
-DEPLOY_PATH=/var/www/wetter
-EOF
+**Der nginx-Vhost gehört nicht ins Repo.** Er liegt unter
+`/etc/nginx/sites-available/wetter.conf` und wird von certbot gepflegt. Bis zum
+5. September kopierte das Deploy-Skript eine Repo-Fassung darüber und nahm damit
+jede certbot-Änderung beim nächsten Deploy stillschweigend zurück. Ein neuer Vhost
+wird nach `platform/NEUE-APP.md` angelegt, nicht aus diesem Repo.
 
-# 3. Docker Network erstellen (einmalig pro Server)
-docker network create apps-net || true
+## Nach dem Deploy prüfen
 
-# 4. Docker Compose starten
-docker compose up -d --build
-
-# 5. Nginx HTTP-only Config (Certbot braucht HTTP!)
-sudo tee /etc/nginx/sites-available/wetter.conf > /dev/null << 'EOF'
-server {
-    listen 80;
-    server_name wetter.elmarhepp.de;
-
-    location / {
-        proxy_pass http://127.0.0.1:3031;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-EOF
-
-sudo ln -sf /etc/nginx/sites-available/wetter.conf /etc/nginx/sites-enabled/wetter.conf
-sudo nginx -t
-sudo systemctl reload nginx
-
-# 6. SSL-Zertifikat (certbot ändert Config zu HTTPS automatisch)
-sudo certbot --nginx -d wetter.elmarhepp.de --non-interactive --agree-tos -m admin@elmarhepp.de
-
-# 7. Verifikation
-docker compose ps
-sudo nginx -t
-curl -I https://wetter.elmarhepp.de/
+```sh
+ssh elmarhepp 'cd /var/www/wetter && docker compose ps'   # Up, healthy
+curl -sI https://wetter.elmarhepp.de/ | head -1           # 200
+curl -s 'https://wetter.elmarhepp.de/backend/proxy.php?api=dashboard' | head -c 200
 ```
 
-## Monitoring
+UptimeRobot prüft `/` auf das Schlüsselwort `Wetter`
+(`platform/deploy/uptimerobot/README.md`). Wer die Startseite umbaut, lässt das
+Wort stehen — sonst meldet der Prüfer einen Ausfall, den es nicht gibt.
 
-```bash
-# Logs anschauen
-docker compose logs -f app
+## Rate Limits
 
-# Status prüfen
-docker compose ps
+Der Proxy zählt gegen vier Grenzen, je 10 % unter dem Limit von Open-Meteo:
+540/Minute, 4500/Stunde, 9000/Tag, 270000/Monat. Der Live-Stand steht im Reiter
+**Monitoring** und unter `?api=dashboard`.
 
-# Neu starten
-docker compose restart app
+## Störungen
 
-# Stoppen
-docker compose down
+| Symptom | Ursache | Prüfen |
+|---|---|---|
+| 502 im Browser | Container unten | `docker compose ps`, `docker compose logs wetter` |
+| CSS oder JS als 404 | Pfade in `frontend/index.html` müssen absolut sein (`/frontend/…`), `index.php` normalisiert das Präfix | `curl -I https://wetter.elmarhepp.de/frontend/style.css` |
+| Styling fehlt nach Änderung | `frontend/style.css` nicht neu gebaut oder nicht committet | lokal `make build`, committen |
+| Rate Limit ausgelöst | Cache greift nicht | `?api=dashboard`, dann `docker compose restart wetter` |
+| Zertifikat abgelaufen | certbot-Timer | `platform/DEPLOYMENT.md` 5 |
 
-# Update (git pull + rebuild)
-git pull origin main
-docker compose up -d --build
-```
-
-## API Health-Checks
-
-```bash
-# Forecast API
-curl -s https://wetter.elmarhepp.de/backend/proxy.php?api=forecast\&lat=49.05\&lon=8.2667 | head -20
-
-# Dashboard
-curl -s https://wetter.elmarhepp.de/backend/proxy.php?api=dashboard
-
-# Aktuelle Seite
-curl -I https://wetter.elmarhepp.de/
-```
-
-## Rate Limits (Dashboard)
-
-Das Dashboard zeigt Live-Metriken:
-
-- Minute: `used/540` (600 - 10% safety margin)
-- Hour: `used/4500` (5000 - 10% safety margin)
-- Day: `used/9000` (10000 - 10% safety margin)
-- Month: `used/270000` (300000 - 10% safety margin)
-
-Überwachung: https://wetter.elmarhepp.de/#dashboard
-
-## Troubleshooting
-
-### Asset 404 Fehler (CSS, JS nicht gefunden)
-
-**Problem**: Browser zeigt `Failed to load resource: the server responded with a status of 404`
-
-**Ursache**: Falsche Pfade in `frontend/index.html` oder Router normalisiert nicht
-
-**Lösung prüfen**:
-
-1. `frontend/index.html` muss absolute Pfade haben:
-
-   ```html
-   <link rel="stylesheet" href="/frontend/style.css" />
-   <script src="/frontend/src/main.js"></script>
-   ```
-
-2. `index.php` muss `/frontend/` Prefix normalisieren (verhindert Verdopplung):
-
-   ```php
-   if (strpos($path, '/frontend/') === 0) {
-       $normalized_path = substr($path, strlen('/frontend'));
-   }
-   ```
-
-3. Browser-Cache leeren: `Cmd+Shift+R` (macOS) oder `Ctrl+Shift+R`
-
-### Container startet nicht
-
-```bash
-docker compose logs app
-docker compose up --build  # Rebuild versuchen
-```
-
-### Nginx-Error
-
-```bash
-sudo nginx -t  # Syntax prüfen
-sudo systemctl status nginx
-sudo systemctl restart nginx
-```
-
-### SSL-Fehler beim Deploy
-
-**Problem**: `cannot load certificate... No such file or directory`
-
-**Ursache**: Nginx Config hat SSL Paths, aber Cert existiert noch nicht
-
-**Lösung**: Erst HTTP-only Config, dann Certbot, dann Nginx reload:
-
-```bash
-# HTTP-only Nginx Config
-sudo tee /etc/nginx/sites-available/wetter.conf > /dev/null << 'EOF'
-server {
-    listen 80;
-    server_name wetter.elmarhepp.de;
-    location / {
-        proxy_pass http://127.0.0.1:3031;
-        # ... headers ...
-    }
-}
-EOF
-
-# Dann SSL mit Certbot
-sudo certbot --nginx -d wetter.elmarhepp.de --non-interactive --agree-tos -m admin@elmarhepp.de
-```
-
-### Rate Limiting ausgelöst
-
-- Cache-Hit prüfen: `/backend/proxy.php?api=dashboard`
-- Warten oder Server neustarten: `docker compose restart app`
-
-## Logs
-
-```bash
-# PHP Error Log
-docker compose exec app cat /var/log/php-errors.log
-
-# Nginx Access Log
-sudo tail -f /var/log/nginx/access.log | grep wetter
-
-# Nginx Error Log
-sudo tail -f /var/log/nginx/error.log
+```sh
+# Logs
+ssh elmarhepp 'cd /var/www/wetter && docker compose logs -f wetter'
 ```
 
 ---
 
-**Zuletzt aktualisiert**: 17. April 2026  
-**Version**: 1.0.0  
-**Status**: ✅ Production Ready
+**Zuletzt geprüft**: 5. September 2026 — gegen den Stand des Repos `platform`.
