@@ -24,6 +24,15 @@ if (strpos($path, '/backend/') === 0) {
     exit;
 }
 
+// Das Impressum ist seit dem 9. August 2026 gemeinsam und liegt auf
+// elmarhepp.de; frontend/impressum.html ist am 5. September gelöscht worden.
+// Ohne diese Weiterleitung liefe ein alter Link in den SPA-Fallback und
+// bekäme die Wetterseite mit HTTP 200 statt des Impressums.
+if ($path === '/impressum' || $path === '/impressum.html') {
+    header('Location: https://elmarhepp.de/impressum', true, 301);
+    exit;
+}
+
 // Frontend-Pfade normalisieren (strip /frontend/ prefix wenn vorhanden)
 $normalized_path = $path;
 if (strpos($path, '/frontend/') === 0) {
