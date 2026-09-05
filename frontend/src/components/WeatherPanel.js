@@ -103,14 +103,14 @@ export default {
     weekLows() {
       return this.days.map((d) => d.lo);
     },
-    /* Die Beschriftung unter dem Diagramm: Stunden, in der Woche Wochentage. */
+    /*
+      Die Beschriftung der x-Achse. In der Wochenansicht sind es Wochentage, aber
+      nur für das Diagramm selbst — die Zeile darunter entfällt dort, weil die
+      Tageskacheln dieselben Kürzel in derselben Spaltenbreite schon tragen und
+      sonst zweimal untereinander stünden.
+    */
     axisLabels() {
       return this.isWeek ? this.days.map((d) => d.name) : this.hourLabels;
-    },
-    /* Acht Stunden oder so viele Tage, wie die Vorhersage hergibt. */
-    axisStyle() {
-      const n = this.axisLabels.length || POINTS;
-      return { gridTemplateColumns: `repeat(${n}, 1fr)` };
     },
     /* Positionen im Stundenarray, die auf dem Dreistundenraster liegen. */
     gridIndexes() {
@@ -434,7 +434,7 @@ export default {
         </div>
       </div>
 
-      <div class="g-grid8 g-hours" :style="axisStyle">
+      <div v-if="!isWeek" class="g-grid8 g-hours">
         <div v-for="(l, i) in axisLabels" :key="i">{{ l }}</div>
       </div>
 
