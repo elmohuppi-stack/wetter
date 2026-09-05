@@ -23,6 +23,29 @@ const GRID_OFFSET = 2; // Rasterstunden sind 2, 5, 8, … — Rest 2 bei Teilung
 const POINTS = 8;
 
 /*
+  Das Tagessymbol wird nicht einfach aus daily.weathercode übernommen.
+
+  Open-Meteo bildet den Tagescode als *schlimmste Stunde des Tages* aus dem
+  deterministischen Lauf, während precipitation_probability aus dem Ensemble
+  kommt. Am 10. September 2026 ergab das drei Stunden Code 61 bei 4-5 %
+  Wahrscheinlichkeit und 0,0 mm — und damit ein Regensymbol über einem Tag,
+  dessen Balken daneben durchweg unter 10 % standen. Die Kachel behauptete
+  etwas, das die Kurve daneben widerlegte.
+
+  Deshalb: ein Niederschlagssymbol nur, wenn der Tag es auch hergibt. Sonst das
+  häufigste Symbol der Tagstunden.
+
+  Die Regenmenge taugt bewusst *nicht* als zweites Kriterium. Sie stammt aus
+  demselben Lauf wie der Code und kann ihn deshalb nicht bestätigen; am
+  7. September hätte sie mit 0,5 mm den Schauer bei 3 % Wahrscheinlichkeit
+  gerettet. Nur die Wahrscheinlichkeit ist unabhängige Evidenz.
+*/
+const PRECIP_CODE = 51; // ab hier Niesel, Regen, Schnee, Schauer, Gewitter
+const WET_PROBABILITY = 30; // Prozent, ab denen der Niederschlagscode zählt
+const DAY_START = 6; // Tagstunden, aus denen das Ersatzsymbol kommt
+const DAY_END = 20;
+
+/*
   Chart.js bringt keine Beschriftung an den Datenpunkten mit, und für ein
   einziges Zahlenband lohnt kein weiteres Skript vom CDN. Das Plugin schreibt
   die Werte direkt über die Punkte, so wie Googles Temperaturkurve.
@@ -85,7 +108,7 @@ export default {
       return times.map((t, i) => ({
         date: t,
         name: this.weekdayShort(t),
-        icon: weatherIcon((this.daily.weathercode || [])[i]),
+        icon: weatherIcon(this.dayCode(i)),
         hi: this.temp((this.daily.temperature_2m_max || [])[i]),
         lo: this.temp((this.daily.temperature_2m_min || [])[i]),
       }));
@@ -179,7 +202,7 @@ export default {
       const dayIdxs = this.hourIndexesOfDay(i);
       return {
         temp: this.temp((this.daily.temperature_2m_max || [])[i]),
-        code: (this.daily.weathercode || [])[i],
+        code: this.dayCode(i),
         precipitation: Math.round(
           (this.daily.precipitation_probability_max || [])[i] ?? 0,
         ),
@@ -217,6 +240,42 @@ export default {
         if (times[i].startsWith(date)) out.push(i);
       }
       return out;
+    },
+    /* Das Symbol eines Tages — siehe Kommentar oben. */
+    dayCode(dayIndex) {
+      const code = (this.daily.weathercode || [])[dayIndex];
+      if (code == null || code < PRECIP_CODE) return code;
+      const probability =
+        (this.daily.precipitation_probability_max || [])[dayIndex] ?? 0;
+      if (probability >= WET_PROBABILITY) return code;
+      return this.dominantDayCode(dayIndex, code);
+    },
+    /* Der häufigste trockene Code der Tagstunden, sonst der Ausgangscode. */
+    dominantDayCode(dayIndex, fallback) {
+      const times = this.hourly.time || [];
+      const codes = this.hourly.weathercode || [];
+      const date = (this.daily.time || [])[dayIndex];
+      if (!date) return fallback;
+      const counts = new Map();
+      for (let i = 0; i < times.length; i++) {
+        if (!times[i].startsWith(date)) continue;
+        const hour = this.hourOf(times[i]);
+        if (hour < DAY_START || hour > DAY_END) continue;
+        const code = codes[i];
+        if (code == null || code >= PRECIP_CODE) continue;
+        counts.set(code, (counts.get(code) || 0) + 1);
+      }
+      let best = fallback;
+      let bestCount = 0;
+      for (const [code, count] of counts) {
+        // Gleichstand geht an den bewölkteren Code — lieber eine Wolke zu viel
+        // als eine Sonne zu viel versprochen.
+        if (count > bestCount || (count === bestCount && code > best)) {
+          best = code;
+          bestCount = count;
+        }
+      }
+      return best;
     },
     meanOf(series, indexes) {
       if (!series || !indexes.length) return 0;
